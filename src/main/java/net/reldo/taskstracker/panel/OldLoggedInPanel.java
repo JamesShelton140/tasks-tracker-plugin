@@ -34,7 +34,7 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
-public class LoggedInPanel extends JPanel
+public class OldLoggedInPanel extends JPanel
 {
 	public AllTaskListPanel allTasksPanel;
 	public TrackedTaskListPanel trackedTaskListPanel;
@@ -45,11 +45,11 @@ public class LoggedInPanel extends JPanel
 	private final SpriteManager spriteManager;
 	private final SkillIconManager skillIconManager;
 
-	// Filter buttons
-	private TriToggleButton completedFilterBtn = new TriToggleButton();
-	private TriToggleButton trackedFilterBtn = new TriToggleButton();
-	private TriToggleButton ignoredFilterBtn = new TriToggleButton();
-	private JPanel titlePanel = new JPanel();
+	/* Filter buttons */
+	private final TriToggleButton completedFilterBtn = new TriToggleButton();
+	private final TriToggleButton trackedFilterBtn = new TriToggleButton();
+	private final TriToggleButton ignoredFilterBtn = new TriToggleButton();
+	private final JPanel titlePanel = new JPanel();
 
 	private final String completeBtnPath = "panel/components/complete_button/style_2a/";
 	private final Icon COMPLETE_INCOMPLETE_ICON = new ImageIcon(ImageUtil.loadImageResource(TasksTrackerPlugin.class, completeBtnPath + "complete_and_incomplete_icon.png"));
@@ -67,7 +67,7 @@ public class LoggedInPanel extends JPanel
 	private final Icon TRACKED_ONLY_ICON = new ImageIcon(ImageUtil.loadImageResource(TasksTrackerPlugin.class, trackedBtnPath + "tracked_icon.png"));
 	private final Icon UNTRACKED_ONLY_ICON = new ImageIcon(ImageUtil.loadImageResource(TasksTrackerPlugin.class, trackedBtnPath + "untracked_icon.png"));
 
-	public LoggedInPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
+	public OldLoggedInPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
 	{
 		super(false);
 		this.plugin = plugin;
@@ -79,6 +79,7 @@ public class LoggedInPanel extends JPanel
 		redraw();
 	}
 
+	//@todo: check this
 	@Override
 	public Dimension getPreferredSize()
 	{
