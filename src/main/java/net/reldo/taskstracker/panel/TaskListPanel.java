@@ -1,5 +1,7 @@
 package net.reldo.taskstracker.panel;
 
+import java.awt.BorderLayout;
+import javax.swing.JPanel;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.tasktypes.Task;
@@ -36,6 +38,10 @@ public abstract class TaskListPanel extends JScrollPane
 		this.skillIconManager = skillIconManager;
 
 		taskList = new TaskListListPanel();
+
+		JPanel northPanel = new FixedWidthPanel();
+		northPanel.setLayout(new BorderLayout());
+		northPanel.add(taskList, BorderLayout.NORTH);
 
 		setViewportView(taskList);
 		setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);

@@ -48,7 +48,7 @@ public class TasksTrackerPluginPanel extends PluginPanel
 //	private final LoggedInPanel loggedInPanel;
 	private final JPanel layoutPanel = new JPanel();;
 	private final PluginErrorPanel errorPanel = new PluginErrorPanel();
-//	private final LoggedOutPanel loggedOutPanel = new LoggedOutPanel();
+	private final LoggedOutPanel loggedOutPanel = new LoggedOutPanel();
 	private JComboBox<TaskType> taskTypeDropdown;
 
 	public AllTaskListPanel allTasksPanel;
@@ -80,7 +80,7 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 	public TasksTrackerPluginPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
 	{
-		super(false);
+//		super(false);
 		this.plugin = plugin;
 		this.clientThread = clientThread;
 		this.spriteManager = spriteManager;
@@ -92,9 +92,10 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 		// Create layout panel for wrapping
 //		final JPanel layoutPanel = new JPanel();
-//		layoutPanel.setPreferredSize(this.getSize());
-		createLayoutPanel(layoutPanel);
+//		layoutPanel.setPreferredSize();
 		add(layoutPanel, BorderLayout.NORTH);
+		createLayoutPanel(layoutPanel);
+		redraw();
 
 		layoutPanel.setVisible(false);
 
@@ -112,9 +113,18 @@ public class TasksTrackerPluginPanel extends PluginPanel
 		trackedTaskListPanel = new TrackedTaskListPanel(plugin, clientThread, spriteManager, skillIconManager);
 		allTasksPanel = new AllTaskListPanel(plugin, clientThread, spriteManager, skillIconManager);
 
+		JPanel wrapperPanel = new JPanel();
+		wrapperPanel.setLayout(new BorderLayout());
+		wrapperPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		wrapperPanel.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH, this.getSize().height));
+		wrapperPanel.add(allTasksPanel, BorderLayout.CENTER);
+
 		JTabbedPane tabbedPane = new JTabbedPane();
-		tabbedPane.addTab("Tracked Tasks", trackedTaskListPanel);
-		tabbedPane.addTab("All Tasks", allTasksPanel);
+		tabbedPane.addTab("Test Tab 1", new JLabel("Test Tab 1"));
+//		tabbedPane.addTab("Test Tab 2", new JLabel("Test Tab 2"));
+//		tabbedPane.addTab("Tracked Tasks", trackedTaskListPanel);
+//		tabbedPane.addTab("All Tasks", allTasksPanel);
+		tabbedPane.addTab("All Tasks", wrapperPanel);
 
 //		JButton exportButton = new JButton("Export");
 //		exportButton.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -123,7 +133,7 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 		parent.add(getNorthPanel(), BorderLayout.NORTH);
 		parent.add(tabbedPane, BorderLayout.CENTER);
-//		parent.add(exportButton, BorderLayout.SOUTH);
+		parent.add(getSouthPanel(), BorderLayout.SOUTH);
 	}
 
 	private JPanel getSouthPanel()
