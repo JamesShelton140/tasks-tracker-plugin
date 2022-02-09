@@ -1,6 +1,7 @@
 package net.reldo.taskstracker.tasktypes;
 
 import com.google.gson.annotations.Expose;
+import java.util.Map;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.data.reldo.ReldoTaskSave;
 import net.reldo.taskstracker.panel.TaskPanel;
@@ -103,4 +104,11 @@ public abstract class Task
 	public abstract TaskType getType();
 
 	public abstract TaskPanel generatePanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager);
+
+	private Map<String, String> properties;
+
+	public String getProperty(String property)
+	{
+		return properties.get(property);
+	}
 }

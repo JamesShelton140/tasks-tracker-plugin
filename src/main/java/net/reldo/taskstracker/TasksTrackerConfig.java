@@ -1,5 +1,7 @@
 package net.reldo.taskstracker;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.tasktypes.TaskType;
 import net.runelite.client.config.Config;
@@ -89,6 +91,19 @@ public interface TasksTrackerConfig extends Config
     )
     default String tierFilter()
     {
+        return "";
+    }
+
+    @ConfigItem(
+            position = 205,
+            keyName = "propFilter",
+            name = "Property Filter",
+            description = "Configures the properties to filter tasks on.",
+            hidden = true
+    )
+    default String propFilter()
+    {
+        // Filter format: keyword1:f-value1,f-value2,f-value3;keyword2:f-value1,f-value2,f-value3
         return "";
     }
 
