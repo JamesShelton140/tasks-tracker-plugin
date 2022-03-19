@@ -5,7 +5,7 @@ import net.reldo.taskstracker.Util;
 import net.reldo.taskstracker.panel.TaskPanel;
 import java.awt.image.BufferedImage;
 import javax.swing.JPopupMenu;
-import net.reldo.taskstracker.panel.filters.TierFilter;
+import net.reldo.taskstracker.panel.filters.FilterFactory;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.SpriteManager;
 
@@ -14,7 +14,7 @@ public class CombatTaskPanel extends TaskPanel
 	public CombatTaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, CombatTask task)
 	{
 		super(plugin, clientThread, spriteManager, task);
-		filters.add(new TierFilter(plugin.getConfig()));
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier"));//"combat_tier"//@todo genericize task panels and filter panels (skill combat etc.)
 	}
 
 	@Override

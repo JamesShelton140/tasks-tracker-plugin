@@ -36,7 +36,7 @@ public class SkillFilterPanel extends FilterButtonPanel
     public SkillFilterPanel(TasksTrackerPlugin plugin)
     {
         super(plugin);
-        this.configKey = "skillFilter";
+        this.configKey = "skill";
 
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -62,7 +62,7 @@ public class SkillFilterPanel extends FilterButtonPanel
             buttonPanel.add(button);
         });
 
-        buttons.get("noskill").setToolTipText("No skill requirements.");
+        buttons.get("na").setToolTipText("No skill requirements");
 
         return buttonPanel;
     }
@@ -86,7 +86,7 @@ public class SkillFilterPanel extends FilterButtonPanel
             images.put(skillName, skillImage);
         }
 
-        skillName = "noskill";
+        skillName = "na";
         skillImage = ImageUtil.loadImageResource(TasksTrackerPlugin.class, "panel/components/no_skill.png");
         images.put(skillName, skillImage);
 

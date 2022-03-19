@@ -1,9 +1,14 @@
 package net.reldo.taskstracker.panel.subfilters;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.BoxLayout;
@@ -14,8 +19,11 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
+import net.reldo.taskstracker.panel.filters.FilterData;
+import net.runelite.client.config.Config;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.ImageUtil;
@@ -104,12 +112,27 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
 
     protected void updateFilterText()
     {
-        String filterText = buttons.entrySet().stream()
-                .filter(e -> e.getValue().isSelected())
-                .map(e -> "f-" + e.getKey()) // prefix included to cover cases where one key name is contained in another (e.g. "Master" -> "Grandmaster")
-                .collect(Collectors.joining(","));
+        TasksTrackerConfig config = plugin.getConfig();
+        Gson gson = new Gson();
+        FilterData filterData;
+        try
+        {
+            filterData = gson.fromJson(config.propFilter(), FilterData.class);
+        }
+        catch (JsonSyntaxException e)
+        {
+            filterData = new FilterData();
+        }
+//        List<String> filterValues = filterData.getData().containsKey(configKey) ? filterData.getFilterValues(configKey) : new ArrayList<>();
 
-        plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, configKey, filterText);
+        List<String> filterValues = buttons.entrySet().stream()
+                .filter(e -> e.getValue().isSelected())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        filterData.put(configKey, filterValues);
+
+        plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "propFilter", gson.toJson(filterData));
     }
 
     protected void setAllSelected(boolean state)

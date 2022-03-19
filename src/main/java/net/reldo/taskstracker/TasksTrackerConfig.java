@@ -103,7 +103,6 @@ public interface TasksTrackerConfig extends Config
     )
     default String propFilter()
     {
-        // Filter format: keyword1:f-value1,f-value2,f-value3;keyword2:f-value1,f-value2,f-value3
         return "";
     }
 

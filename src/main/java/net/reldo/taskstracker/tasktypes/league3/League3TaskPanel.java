@@ -3,8 +3,7 @@ package net.reldo.taskstracker.tasktypes.league3;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.Util;
 import net.reldo.taskstracker.panel.TaskPanel;
-import net.reldo.taskstracker.panel.filters.SkillFilter;
-import net.reldo.taskstracker.panel.filters.TierFilter;
+import net.reldo.taskstracker.panel.filters.FilterFactory;
 import net.reldo.taskstracker.tasktypes.RequiredSkill;
 import net.reldo.taskstracker.tasktypes.Task;
 import java.awt.Color;
@@ -22,8 +21,9 @@ public class League3TaskPanel extends TaskPanel
 	public League3TaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, Task task)
 	{
 		super(plugin, clientThread, spriteManager, task);
-		filters.add(new SkillFilter(plugin.getConfig()));
-		filters.add(new TierFilter(plugin.getConfig()));
+//		filters.add(new SkillFilter(plugin.getConfig()));
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "exclusive", "skill"));
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier"));//"league3_tier"
 	}
 
 	@Override
