@@ -21,7 +21,9 @@ public abstract class Filter
         Gson gson = new Gson();
         FilterData filterData = gson.fromJson(config.propFilter(), FilterData.class);
 
-        return filterData.getFilterValues(keyword);
+        String taskType = config.taskType().name();
+
+        return filterData.getFilterValues(taskType + "_" + keyword);
     }
 
     public abstract boolean meetsCriteria(Task task);

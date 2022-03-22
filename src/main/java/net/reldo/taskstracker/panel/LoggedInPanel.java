@@ -530,16 +530,30 @@ public class LoggedInPanel extends JPanel  implements ChangeListener
 
 		List<String> filterCounts = new ArrayList<>();
 
-		//@todo Make generic to any tasktype that includes skill requirements
-		// maybe filter key should be "TASKTYPE_FILTERKEY" eg. LEAGUE_3_SKILL then any filter key containing the current task type is added
-		if(plugin.getConfig().taskType().equals(TaskType.LEAGUE_3))
+		Map<String, List<String>> filterValues = filterData.getData();
+
+		for(String key : filterValues.keySet())
 		{
-			int count = filterData.getFilterValues("skill").size();
-			filterCounts.add(count + " skill");
+			String taskType = plugin.getConfig().taskType().name();
+
+			if(key.matches("\\b"+ taskType +"_.*"))
+			{
+				int count = filterData.getFilterValues(key).size();
+				String filterName = key.replaceAll("\\b"+ taskType +"_", "");
+				filterCounts.add(count + " " + filterName);
+			}
 		}
 
-		int count = filterData.getFilterValues("tier").size();
-		filterCounts.add(count + " tier");
+		//@todo Make generic to any tasktype that includes skill requirements
+		// maybe filter key should be "TASKTYPE_FILTERKEY" eg. LEAGUE_3_SKILL then any filter key containing the current task type is added
+//		if(plugin.getConfig().taskType().equals(TaskType.LEAGUE_3))
+//		{
+//			int count = filterData.getFilterValues(TaskType.LEAGUE_3.name() + "_skill").size();
+//			filterCounts.add(count + " skill");
+//		}
+//
+//		int count = filterData.getFilterValues(TaskType.LEAGUE_3.name() + "_tier").size();
+//		filterCounts.add(count + " tier");
 
 		collapseBtn.setText(String.join(", ", filterCounts) + " filters");
 	}

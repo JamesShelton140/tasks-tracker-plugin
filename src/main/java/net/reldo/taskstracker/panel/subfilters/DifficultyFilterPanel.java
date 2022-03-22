@@ -31,7 +31,7 @@ public class DifficultyFilterPanel extends FilterButtonPanel
     }
 
     @Override
-    protected JPanel makeButtonPanel()
+    protected JPanel makePanel()
     {
         // Panel that holds skill icons
         JPanel buttonPanel = new JPanel();

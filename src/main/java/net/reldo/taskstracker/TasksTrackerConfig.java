@@ -23,6 +23,17 @@ public interface TasksTrackerConfig extends Config
 	}
 
     @ConfigItem(
+            position = 11,
+            keyName = "saveSubFilterState",
+            name = "Save Sub Filter State",
+            description = "Configures whether the state of subfilters should be saved and recalled when switching task type or restarting the plugin."
+    )
+    default boolean saveSubFilterState()
+    {
+        return true;
+    }
+
+    @ConfigItem(
             position = 100,
             keyName = "completedFilter",
             name = "Completed Tasks Filter",

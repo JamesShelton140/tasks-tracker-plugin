@@ -2,10 +2,8 @@ package net.reldo.taskstracker.panel.subfilters;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.MalformedJsonException;
 import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,7 +21,6 @@ import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.filters.FilterData;
-import net.runelite.client.config.Config;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.ImageUtil;
@@ -45,7 +42,7 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
 
     protected abstract LinkedHashMap<String, BufferedImage> getIconImages();
 
-    protected abstract JPanel makeButtonPanel();
+    protected abstract JPanel makePanel();
 
     protected JToggleButton makeButton(String name, BufferedImage image)
     {
@@ -64,7 +61,7 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         button.setToolTipText(name.substring(0,1).toUpperCase() + name.substring(1).toLowerCase());
 
         button.addActionListener(e -> {
-            updateFilterText();
+            saveFilterState();
             plugin.refresh();
         });
 
@@ -86,7 +83,7 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         all.setFont(FontManager.getRunescapeSmallFont());
         all.addActionListener(e -> {
             setAllSelected(true);
-            updateFilterText();
+            saveFilterState();
             plugin.refresh();
         });
 
@@ -96,7 +93,7 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         none.setFont(FontManager.getRunescapeSmallFont());
         none.addActionListener(e -> {
             setAllSelected(false);
-            updateFilterText();
+            saveFilterState();
             plugin.refresh();
         });
 
@@ -110,7 +107,7 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         return buttonWrapper;
     }
 
-    protected void updateFilterText()
+    protected void saveFilterState()
     {
         TasksTrackerConfig config = plugin.getConfig();
         Gson gson = new Gson();
@@ -123,16 +120,28 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         {
             filterData = new FilterData();
         }
-//        List<String> filterValues = filterData.getData().containsKey(configKey) ? filterData.getFilterValues(configKey) : new ArrayList<>();
 
         List<String> filterValues = buttons.entrySet().stream()
                 .filter(e -> e.getValue().isSelected())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
-        filterData.put(configKey, filterValues);
+        String taskType = config.taskType().name();
+
+        filterData.put(taskType + "_" + configKey, filterValues);
 
         plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "propFilter", gson.toJson(filterData));
+    }
+
+    public void loadFilterState()
+    {
+        TasksTrackerConfig config = plugin.getConfig();
+
+        Gson gson = new Gson();
+        FilterData filterData = gson.fromJson(config.propFilter(), FilterData.class);
+        List<String> filterState = filterData.getFilterValues(config.taskType().name() + "_" + configKey);
+
+        buttons.entrySet().forEach((e) -> e.getValue().setSelected(filterState.contains(e.getKey())));
     }
 
     protected void setAllSelected(boolean state)
@@ -147,9 +156,17 @@ public abstract class FilterButtonPanel extends FixedWidthPanel
         buttons.clear();
         removeAll();
 
-        add(makeButtonPanel(), BorderLayout.CENTER);
+        add(makePanel(), BorderLayout.CENTER);
         add(allOrNoneButtons(), BorderLayout.SOUTH);
-        updateFilterText();
+
+        if(plugin.getConfig().saveSubFilterState())
+        {
+            loadFilterState();
+        }
+        else
+        {
+            saveFilterState();
+        }
 
         validate();
         repaint();
