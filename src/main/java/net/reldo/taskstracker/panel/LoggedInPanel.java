@@ -1,5 +1,6 @@
 package net.reldo.taskstracker.panel;
 
+import com.google.gson.Gson;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -32,6 +33,7 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.panel.components.SearchBox;
 import net.reldo.taskstracker.panel.components.TriToggleButton;
+import net.reldo.taskstracker.panel.filters.FilterData;
 import net.reldo.taskstracker.tasktypes.Task;
 import net.reldo.taskstracker.tasktypes.TaskType;
 import net.runelite.client.callback.ClientThread;
@@ -523,15 +525,20 @@ public class LoggedInPanel extends JPanel  implements ChangeListener
 	{
 		if(plugin.getConfig().taskType() == null) return;
 
+		Gson gson = new Gson();
+		FilterData filterData = gson.fromJson(config.propFilter(), FilterData.class);
+
 		List<String> filterCounts = new ArrayList<>();
 
+		//@todo Make generic to any tasktype that includes skill requirements
+		// maybe filter key should be "TASKTYPE_FILTERKEY" eg. LEAGUE_3_SKILL then any filter key containing the current task type is added
 		if(plugin.getConfig().taskType().equals(TaskType.LEAGUE_3))
 		{
-			int count = config.skillFilter().equals("") ? 0 : config.skillFilter().split(",").length ;
+			int count = filterData.getFilterValues("skill").size();
 			filterCounts.add(count + " skill");
 		}
 
-		int count = config.tierFilter().equals("") ? 0 : config.tierFilter().split(",").length;
+		int count = filterData.getFilterValues("tier").size();
 		filterCounts.add(count + " tier");
 
 		collapseBtn.setText(String.join(", ", filterCounts) + " filters");
