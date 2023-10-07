@@ -20,8 +20,7 @@ public class DifficultyFilterPanel extends FilterButtonPanel
 
     public DifficultyFilterPanel(TasksTrackerPlugin plugin, SpriteManager spriteManager)
     {
-        super(plugin);
-        this.configKey = "tier";
+        super(plugin, "tier");
 
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -43,7 +42,7 @@ public class DifficultyFilterPanel extends FilterButtonPanel
 
         // For each skill on the in-game skill panel, create a button and add it to the UI
         skillImages.forEach((name, image) -> {
-            JToggleButton button = makeButton(name, image);
+            JToggleButton button = (JToggleButton) makeButton(name, image);
             buttons.put(name, button);
             buttonPanel.add(button);
         });

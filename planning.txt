@@ -1,0 +1,139 @@
+Filter format:
+
+[
+    {
+        "name": "skill",
+        "values": ["attack", "mining"]
+    },
+    {
+        "name": "tier_league3",
+        "values": ["easy", "hard"]
+    }
+]
+
+class FilterData
+{
+    private Map<String, List<String>> data;
+}
+
+Checklist schema
+
+[
+    "name": "All",
+    "values": 
+    [
+        {
+            "name": "Bossing",
+            "values": 
+            [
+                "Barrows",
+                "Bryophyta",
+                "Cerberus",
+                "Corporeal Beast",
+                "Dagannoth Kings",
+                "Gauntlet",
+                "General"
+            ]
+        },
+        {
+            "name": "Clues",
+            "values": 
+            [
+                "Beginner",
+                "Easy",
+                "Medium",
+                "Hard",
+                "Elite",
+                "Master",
+                "Shared"
+            ]
+        }
+    ]
+]
+
+Alternate checklist schema
+
+[
+    "name": "category",
+    "values": ["value1", "value2"],
+    "subListValues": 
+    [
+        {
+            "name": "Bossing",
+            "values": 
+            [
+                "Barrows",
+                "Bryophyta",
+                "Cerberus",
+                "Corporeal Beast",
+                "Dagannoth Kings",
+                "Gauntlet",
+                "General"
+            ],
+            "subListValues": []
+        },
+        {
+            "name": "Clues",
+            "values": 
+            [
+                "Beginner",
+                "Easy",
+                "Medium",
+                "Hard",
+                "Elite",
+                "Master",
+                "Shared"
+            ],
+            "subListValues": []
+        }
+    ]
+]
+
+[
+  {
+    "slug": "CATEGORY",
+    "name": "Category",
+    "uiType": "checklist", // types TBD
+    "options": {}, // additional properties pertaining to the 'type' control render & behavior
+    "values": 
+    [
+        "name": "Category",
+        "values": ["value1", "value2"],
+        "subListValues": 
+        [
+            {
+                "name": "Bossing",
+                "values": 
+                [
+                    "Barrows",
+                    "Bryophyta",
+                    "Cerberus",
+                    "Corporeal Beast",
+                    "Dagannoth Kings",
+                    "Gauntlet",
+                    "General"
+                ],
+                "subListValues": []
+            },
+            {
+                "name": "Clues",
+                "values": 
+                [
+                    "Beginner",
+                    "Easy",
+                    "Medium",
+                    "Hard",
+                    "Elite",
+                    "Master",
+                    "Shared"
+                ],
+                "subListValues": []
+            }
+        ]
+    ]
+  }
+]
+
+manifest.json -> plugin
+task-types.json -> TaskTypeManager/Factory?
+filters.json -> 

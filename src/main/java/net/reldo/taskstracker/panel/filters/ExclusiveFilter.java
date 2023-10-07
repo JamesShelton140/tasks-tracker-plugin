@@ -18,11 +18,11 @@ public class ExclusiveFilter extends Filter {
         if (task.getSkills() == null || filterValues == null) return true;
 
         if (task.getSkills().length > 0 && !Arrays.stream(task.getSkills())
-                .allMatch((RequiredSkill skill) -> filterValues.contains(skill.getSkill().toLowerCase()))) //@todo replace "getSkill()" with generic property getter "getProperty(keyword)"
+                .allMatch((RequiredSkill skill) -> filterValues.contains(skill.getSkill().toLowerCase()))) //@todo replace "skill" with generic property
         {
             return false;
         }
 
-        return task.getSkills().length != 0 || filterValues.contains("na");
+        return task.getSkills().length != 0 || filterValues.contains("na"); //@todo replace "getSkills()" with generic property getter "getProperty(keyword)"
     }
 }

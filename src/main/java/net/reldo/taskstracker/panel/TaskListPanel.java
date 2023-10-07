@@ -72,7 +72,7 @@ public class TaskListPanel extends JScrollPane
 	{
 		assert SwingUtilities.isEventDispatchThread();
 
-		emptyTasks.setVisible(false);
+//		emptyTasks.setVisible(false);
 
 		if (task != null)
 		{
@@ -89,14 +89,7 @@ public class TaskListPanel extends JScrollPane
 			}
 		}
 
-		Optional<TaskPanel> visibleTaskPanel = taskPanels.stream()
-				.filter(TaskPanel::isVisible)
-				.findFirst();
-
-		if (!visibleTaskPanel.isPresent())
-		{
-			emptyTasks.setVisible(true);
-		}
+		emptyTasks.setVisible(taskPanels.stream().noneMatch(TaskPanel::isVisible));
 	}
 
 	private class TaskListListPanel extends FixedWidthPanel

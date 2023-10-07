@@ -1,7 +1,5 @@
 package net.reldo.taskstracker;
 
-import java.util.HashMap;
-import java.util.Map;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.tasktypes.TaskType;
 import net.runelite.client.config.Config;

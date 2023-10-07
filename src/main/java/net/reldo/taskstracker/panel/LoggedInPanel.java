@@ -19,8 +19,10 @@ import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
@@ -46,7 +48,7 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
-public class LoggedInPanel extends JPanel  implements ChangeListener
+public class LoggedInPanel extends JPanel implements ChangeListener
 {
 	public TaskListPanel taskListPanel;
 	private JComboBox<TaskType> taskTypeDropdown;
@@ -302,7 +304,7 @@ public class LoggedInPanel extends JPanel  implements ChangeListener
 		collapseBtn.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		collapseBtn.setAlignmentX(LEFT_ALIGNMENT);
 		collapseBtn.setUI(new BasicButtonUI()); // substance breaks the layout
-		collapseBtn.addActionListener(ev -> subFilterPanel.setVisible(!subFilterPanel.isVisible()));
+//		collapseBtn.addActionListener(ev -> subFilterPanel.setVisible(!subFilterPanel.isVisible()));
 		collapseBtn.setHorizontalTextPosition(JButton.CENTER);
 		collapseBtn.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		collapseBtn.setFont(FontManager.getRunescapeSmallFont());
@@ -314,8 +316,18 @@ public class LoggedInPanel extends JPanel  implements ChangeListener
 
 		// panel to hold sub-filters
 		subFilterPanel = new SubFilterPanel(plugin, spriteManager);
+//		JScrollPane scrollPane = new JScrollPane(subFilterPanel);//@todo make scollpane work, currently not functional
+//		scrollPane.setBorder(new EmptyBorder(0,0,0,0));
+//		scrollPane.setVisible(false);
+//		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		collapseBtn.addActionListener(ev -> {
+//			scrollPane.setVisible(!scrollPane.isVisible());
+			subFilterPanel.setVisible(!subFilterPanel.isVisible());
+//			subFilterWrapper.revalidate();
+		});
 
 		subFilterWrapper.add(collapseBtn, BorderLayout.NORTH);
+//		subFilterWrapper.add(scrollPane, BorderLayout.CENTER);
 		subFilterWrapper.add(subFilterPanel, BorderLayout.CENTER);
 
 		northPanel.add(getTitleAndButtonPanel());
@@ -543,17 +555,6 @@ public class LoggedInPanel extends JPanel  implements ChangeListener
 				filterCounts.add(count + " " + filterName);
 			}
 		}
-
-		//@todo Make generic to any tasktype that includes skill requirements
-		// maybe filter key should be "TASKTYPE_FILTERKEY" eg. LEAGUE_3_SKILL then any filter key containing the current task type is added
-//		if(plugin.getConfig().taskType().equals(TaskType.LEAGUE_3))
-//		{
-//			int count = filterData.getFilterValues(TaskType.LEAGUE_3.name() + "_skill").size();
-//			filterCounts.add(count + " skill");
-//		}
-//
-//		int count = filterData.getFilterValues(TaskType.LEAGUE_3.name() + "_tier").size();
-//		filterCounts.add(count + " tier");
 
 		collapseBtn.setText(String.join(", ", filterCounts) + " filters");
 	}

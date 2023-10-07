@@ -101,14 +101,14 @@ public abstract class Task
 		}
 	}
 
-	public abstract TaskType getType();
-
-	public abstract TaskPanel generatePanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager);
-
 	private Map<String, String> properties;
 
 	public String getProperty(String property)
 	{
 		return properties.get(property);
 	}
+
+	public abstract TaskType getType();
+
+	public abstract TaskPanel generatePanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager);
 }

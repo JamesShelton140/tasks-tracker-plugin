@@ -35,8 +35,7 @@ public class SkillFilterPanel extends FilterButtonPanel
 
     public SkillFilterPanel(TasksTrackerPlugin plugin)
     {
-        super(plugin);
-        this.configKey = "skill";
+        super(plugin, "skill");
 
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -57,7 +56,7 @@ public class SkillFilterPanel extends FilterButtonPanel
 
         // For each skill on the in-game skill panel, create a button and add it to the UI
         skillImages.forEach((name, image) -> {
-            JToggleButton button = makeButton(name, image);
+            JToggleButton button = (JToggleButton) makeButton(name, image);
             buttons.put(name, button);
             buttonPanel.add(button);
         });
@@ -97,7 +96,7 @@ public class SkillFilterPanel extends FilterButtonPanel
     public void redraw()
     {
         if (plugin.getConfig().taskType() != null)
-            this.setVisible(!plugin.getConfig().taskType().equals(TaskType.COMBAT));
+            this.setVisible(!plugin.getConfig().taskType().equals(TaskType.COMBAT));//@todo replace with dynamic task type check
 
         super.redraw();
     }
