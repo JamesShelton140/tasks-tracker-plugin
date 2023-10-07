@@ -12,6 +12,8 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
@@ -29,15 +31,17 @@ public class TaskListPanel extends JScrollPane
 	private final ClientThread clientThread;
 	private final SpriteManager spriteManager;
 	private final SkillIconManager skillIconManager;
+	private final Gson gson;
 	private final TaskListListPanel taskList;
 	private final JLabel emptyTasks = new JLabel();
 
-	public TaskListPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
+	public TaskListPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager, Gson gson)
 	{
 		this.plugin = plugin;
 		this.clientThread = clientThread;
 		this.spriteManager = spriteManager;
 		this.skillIconManager = skillIconManager;
+		this.gson = gson;
 
 		taskList = new TaskListListPanel();
 
@@ -126,7 +130,7 @@ public class TaskListPanel extends JScrollPane
 			}
 			for (Task task : tasks)
 			{
-				TaskPanel taskPanel = task.generatePanel(plugin, clientThread, spriteManager, skillIconManager);
+				TaskPanel taskPanel = task.generatePanel(plugin, clientThread, spriteManager, skillIconManager, gson);
 				add(taskPanel);
 				taskPanels.add(taskPanel);
 			}

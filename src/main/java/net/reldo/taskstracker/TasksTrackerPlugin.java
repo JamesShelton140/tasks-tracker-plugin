@@ -96,7 +96,7 @@ public class TasksTrackerPlugin extends Plugin
 	{
 		forceUpdateVarpsFlag = false;
 
-		pluginPanel = new TasksTrackerPluginPanel(this, config, clientThread, spriteManager, skillIconManager);
+		pluginPanel = new TasksTrackerPluginPanel(this, config, clientThread, spriteManager, skillIconManager, gson);
 
 		boolean isLoggedIn = isLoggedInState(client.getGameState());
 		pluginPanel.setLoggedIn(isLoggedIn);

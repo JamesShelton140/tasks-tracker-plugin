@@ -9,6 +9,8 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.border.EmptyBorder;
+
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.tasktypes.TaskType;
 import net.runelite.client.hiscore.HiscoreSkill;
@@ -33,9 +35,9 @@ public class SkillFilterPanel extends FilterButtonPanel
             CONSTRUCTION, HUNTER
     );
 
-    public SkillFilterPanel(TasksTrackerPlugin plugin)
+    public SkillFilterPanel(TasksTrackerPlugin plugin, Gson gson)
     {
-        super(plugin, "skill");
+        super(plugin, gson, "skill");
 
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);

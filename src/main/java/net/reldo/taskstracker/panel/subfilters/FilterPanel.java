@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import javax.swing.AbstractButton;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -18,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
@@ -27,19 +29,22 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.SwingUtil;
 
+@Slf4j
 public abstract class FilterPanel extends FixedWidthPanel
 {
 
     protected final TasksTrackerPlugin plugin;
+    protected final Gson gson;
 
     protected final Map<String, AbstractButton> buttons = new HashMap<>();
     protected String configKey;
 
 
-    public FilterPanel(TasksTrackerPlugin plugin, String configKey)
+    public FilterPanel(TasksTrackerPlugin plugin, Gson gson, String configKey)
     {
         this.plugin = plugin;
         this.configKey = configKey;
+        this.gson = gson;
     }
 
     protected abstract LinkedHashMap<String, BufferedImage> getIconImages();
@@ -88,7 +93,7 @@ public abstract class FilterPanel extends FixedWidthPanel
     protected void saveFilterState()
     {
         TasksTrackerConfig config = plugin.getConfig();
-        Gson gson = new Gson();
+
         FilterData filterData;
         try
         {
@@ -115,8 +120,8 @@ public abstract class FilterPanel extends FixedWidthPanel
     {
         TasksTrackerConfig config = plugin.getConfig();
 
-        Gson gson = new Gson();
-        FilterData filterData = gson.fromJson(config.propFilter(), FilterData.class);
+        FilterData filterData = this.gson.fromJson(config.propFilter(), FilterData.class);
+
         List<String> filterState = filterData.getFilterValues(config.taskType().name() + "_" + configKey);
 
         if(filterState == null) return;

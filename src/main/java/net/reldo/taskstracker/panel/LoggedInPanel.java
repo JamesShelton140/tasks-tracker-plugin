@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
@@ -58,6 +59,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 	private final SpriteManager spriteManager;
 	private final SkillIconManager skillIconManager;
 	private final TasksTrackerConfig config;
+	private final Gson gson;
 
 	// Filter buttons
 	private final TriToggleButton completedFilterBtn = new TriToggleButton();
@@ -94,7 +96,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 	private final Icon MENU_ICON_HOVER = new ImageIcon(collapseImg);
 	private final Icon MENU_EXPANDED_ICON = new ImageIcon(ImageUtil.loadImageResource(TasksTrackerPlugin.class, expandBtnPath + "filter_menu_expanded.png"));
 
-	public LoggedInPanel(TasksTrackerPlugin plugin, TasksTrackerConfig config, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
+	public LoggedInPanel(TasksTrackerPlugin plugin, TasksTrackerConfig config, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager, Gson gson)
 	{
 		super(false);
 		this.plugin = plugin;
@@ -102,6 +104,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 		this.spriteManager = spriteManager;
 		this.skillIconManager = skillIconManager;
 		this.config = config;
+		this.gson = gson;
 
 		createPanel(this);
 	}
@@ -131,7 +134,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 		parent.setLayout(new BorderLayout());
 		parent.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-		taskListPanel = new TaskListPanel(plugin, clientThread, spriteManager, skillIconManager);
+		taskListPanel = new TaskListPanel(plugin, clientThread, spriteManager, skillIconManager, gson);
 
 		parent.add(getNorthPanel(), BorderLayout.NORTH);
 		parent.add(getCenterPanel(), BorderLayout.CENTER);
@@ -315,7 +318,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 		collapseBtn.setSelectedIcon(MENU_EXPANDED_ICON);
 
 		// panel to hold sub-filters
-		subFilterPanel = new SubFilterPanel(plugin, spriteManager);
+		subFilterPanel = new SubFilterPanel(plugin, spriteManager, gson);
 //		JScrollPane scrollPane = new JScrollPane(subFilterPanel);//@todo make scollpane work, currently not functional
 //		scrollPane.setBorder(new EmptyBorder(0,0,0,0));
 //		scrollPane.setVisible(false);
@@ -537,8 +540,7 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 	{
 		if(plugin.getConfig().taskType() == null) return;
 
-		Gson gson = new Gson();
-		FilterData filterData = gson.fromJson(config.propFilter(), FilterData.class);
+		FilterData filterData = this.gson.fromJson(config.propFilter(), FilterData.class);
 
 		List<String> filterCounts = new ArrayList<>();
 

@@ -1,5 +1,6 @@
 package net.reldo.taskstracker.tasktypes.league3;
 
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.panel.TaskPanel;
 import net.reldo.taskstracker.tasktypes.Task;
@@ -23,8 +24,8 @@ public class League3Task extends Task
 	}
 
 	@Override
-	public TaskPanel generatePanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager)
+	public TaskPanel generatePanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, SkillIconManager skillIconManager, Gson gson)
 	{
-		return new League3TaskPanel(plugin, clientThread, spriteManager, this);
+		return new League3TaskPanel(plugin, clientThread, spriteManager, gson, this);
 	}
 }

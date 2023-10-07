@@ -1,5 +1,6 @@
 package net.reldo.taskstracker.panel.filters;
 
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerConfig;
 
 public class FilterFactory
@@ -9,14 +10,14 @@ public class FilterFactory
         return null;
     }
 
-    public static Filter createFilterFromType(TasksTrackerConfig config, String type, String keyword)
+    public static Filter createFilterFromType(TasksTrackerConfig config, String type, String keyword, Gson gson)
     {
         switch (type)
         {
             case "simple":
-                return new SimpleFilter(config, keyword);
+                return new SimpleFilter(config, keyword, gson);
             case "exclusive":
-                return new ExclusiveFilter(config, keyword);
+                return new ExclusiveFilter(config, keyword, gson);
             default:
                 return null;
         }

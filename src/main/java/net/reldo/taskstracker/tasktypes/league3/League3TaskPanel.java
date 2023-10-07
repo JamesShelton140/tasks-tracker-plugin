@@ -1,5 +1,6 @@
 package net.reldo.taskstracker.tasktypes.league3;
 
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.Util;
 import net.reldo.taskstracker.panel.TaskPanel;
@@ -9,6 +10,7 @@ import net.reldo.taskstracker.tasktypes.Task;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import javax.inject.Inject;
 import javax.swing.JPopupMenu;
 import net.runelite.api.Skill;
 import net.runelite.client.callback.ClientThread;
@@ -18,12 +20,12 @@ import net.runelite.client.ui.ColorScheme;
 
 public class League3TaskPanel extends TaskPanel
 {
-	public League3TaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, Task task)
+	public League3TaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, Gson gson, Task task)
 	{
 		super(plugin, clientThread, spriteManager, task);
 //		filters.add(new SkillFilter(plugin.getConfig()));
-		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "exclusive", "skill"));
-		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier"));//"league3_tier"
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "exclusive", "skill", gson));
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier", gson));//"league3_tier"
 	}
 
 	@Override

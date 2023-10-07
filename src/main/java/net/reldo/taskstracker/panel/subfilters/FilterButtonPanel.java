@@ -9,15 +9,17 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
 
 public abstract class FilterButtonPanel extends FilterPanel
 {
-    public FilterButtonPanel(TasksTrackerPlugin plugin, String configKey)
+    public FilterButtonPanel(TasksTrackerPlugin plugin, Gson gson, String configKey)
     {
-        super(plugin, configKey);
+        super(plugin, gson, configKey);
     }
 
     protected abstract LinkedHashMap<String, BufferedImage> getIconImages();

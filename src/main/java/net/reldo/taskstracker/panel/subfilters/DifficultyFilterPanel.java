@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.border.EmptyBorder;
+
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.tasktypes.TaskType;
 import net.reldo.taskstracker.tasktypes.combattask.CombatTaskTier;
@@ -18,9 +20,9 @@ import net.runelite.client.util.ImageUtil;
 public class DifficultyFilterPanel extends FilterButtonPanel
 {
 
-    public DifficultyFilterPanel(TasksTrackerPlugin plugin, SpriteManager spriteManager)
+    public DifficultyFilterPanel(TasksTrackerPlugin plugin, SpriteManager spriteManager, Gson gson)
     {
-        super(plugin, "tier");
+        super(plugin, gson, "tier");
 
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);

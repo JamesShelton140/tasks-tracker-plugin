@@ -2,13 +2,15 @@ package net.reldo.taskstracker.panel.filters;
 
 import java.util.Arrays;
 import java.util.List;
+
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.tasktypes.RequiredSkill;
 import net.reldo.taskstracker.tasktypes.Task;
 
 public class ExclusiveFilter extends Filter {
-    ExclusiveFilter(TasksTrackerConfig config, String keyword) {
-        super(config, keyword);
+    ExclusiveFilter(TasksTrackerConfig config, String keyword, Gson gson) {
+        super(config, keyword, gson);
     }
 
     @Override

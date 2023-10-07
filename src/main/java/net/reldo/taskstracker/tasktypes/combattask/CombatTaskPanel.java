@@ -3,13 +3,13 @@ package net.reldo.taskstracker.tasktypes.combattask;
 import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.inject.Inject;
 import javax.swing.JPopupMenu;
+
+import com.google.gson.Gson;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.Util;
 import net.reldo.taskstracker.panel.TaskPanel;
-import net.reldo.taskstracker.panel.filters.TierFilter;
-import java.awt.image.BufferedImage;
-import javax.swing.JPopupMenu;
 import net.reldo.taskstracker.panel.filters.FilterFactory;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.SpriteManager;
@@ -19,10 +19,10 @@ public class CombatTaskPanel extends TaskPanel
 	private String datePattern = "MM-dd-yyyy hh:mma";
 	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
 
-	public CombatTaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, CombatTask task)
+	public CombatTaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, Gson gson, CombatTask task)
 	{
 		super(plugin, clientThread, spriteManager, task);
-		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier"));//"combat_tier"//@todo genericize task panels and filter panels (skill combat etc.)
+		filters.add(FilterFactory.createFilterFromType(plugin.getConfig(), "simple", "tier", gson));//"combat_tier"//@todo genericize task panels and filter panels (skill combat etc.)
 	}
 
 	@Override
