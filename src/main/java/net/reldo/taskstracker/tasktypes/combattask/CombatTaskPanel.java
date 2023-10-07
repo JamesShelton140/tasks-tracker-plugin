@@ -1,8 +1,13 @@
 package net.reldo.taskstracker.tasktypes.combattask;
 
+import java.awt.image.BufferedImage;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.JPopupMenu;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.Util;
 import net.reldo.taskstracker.panel.TaskPanel;
+import net.reldo.taskstracker.panel.filters.TierFilter;
 import java.awt.image.BufferedImage;
 import javax.swing.JPopupMenu;
 import net.reldo.taskstracker.panel.filters.FilterFactory;
@@ -11,6 +16,9 @@ import net.runelite.client.game.SpriteManager;
 
 public class CombatTaskPanel extends TaskPanel
 {
+	private String datePattern = "MM-dd-yyyy hh:mma";
+	private SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
+
 	public CombatTaskPanel(TasksTrackerPlugin plugin, ClientThread clientThread, SpriteManager spriteManager, CombatTask task)
 	{
 		super(plugin, clientThread, spriteManager, task);
@@ -31,6 +39,11 @@ public class CombatTaskPanel extends TaskPanel
 			task.getTier() + Util.HTML_LINE_BREAK +
 			task.getMonster() + Util.HTML_LINE_BREAK +
 			task.getDescription();
+
+		if (task.isCompleted())
+		{
+			text += Util.HTML_LINE_BREAK + Util.HTML_LINE_BREAK + "✔ " + simpleDateFormat.format(new Date(task.getCompletedOn()));
+		}
 
 		text = Util.wrapWithWrappingParagraph(text, 200);
 
