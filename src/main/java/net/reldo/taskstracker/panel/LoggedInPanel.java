@@ -558,6 +558,6 @@ public class LoggedInPanel extends JPanel implements ChangeListener
 			}
 		}
 
-		collapseBtn.setText(String.join(", ", filterCounts) + " filters");
+		collapseBtn.setText(String.join(", ", filterCounts));
 	}
 }
