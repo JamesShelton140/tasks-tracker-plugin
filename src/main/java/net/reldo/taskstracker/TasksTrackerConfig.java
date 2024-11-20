@@ -32,13 +32,13 @@ public interface TasksTrackerConfig extends Config
 
     @ConfigItem(
             position = 12,
-            keyName = "saveSubFilterState", //@todo generalise this to all sub-filters
-            name = "Save Filter State",
-            description = "Configures whether the state of area filters should be saved and recalled when switching task type or restarting the plugin."
+            keyName = "fancyUIEnabled",
+            name = "Enable Fancy UI",
+            description = "Toggles HTML formatting and tracked/ignored button decorations on task panels. Enabling this will cause a delay when changing Task Type or Task sort order."
     )
-    default boolean saveSubFilterState()
+    default boolean fancyUIEnabled()
     {
-        return true;
+        return false;
     }
 
     @ConfigItem(

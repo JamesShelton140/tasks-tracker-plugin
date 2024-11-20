@@ -218,9 +218,9 @@ public class TasksTrackerPlugin extends Plugin
 			forceVarpUpdate();
 		}
 
-		if (configChanged.getKey().equals("filterPanelCollapsible"))
+		if (configChanged.getKey().equals("filterPanelCollapsible") || configChanged.getKey().equals("fancyUIEnabled"))
 		{
-			pluginPanel.redraw();
+			SwingUtilities.invokeLater(() -> pluginPanel.redraw());
 		}
 	}
 
