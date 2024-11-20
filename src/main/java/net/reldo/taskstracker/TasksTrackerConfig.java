@@ -4,6 +4,7 @@ import net.reldo.taskstracker.config.ConfigValues;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.Range;
 
 @ConfigGroup(TasksTrackerPlugin.CONFIG_GROUP_NAME)
 public interface TasksTrackerConfig extends Config
@@ -34,11 +35,26 @@ public interface TasksTrackerConfig extends Config
             position = 12,
             keyName = "saveSubFilterState", //@todo generalise this to all sub-filters
             name = "Save Filter State",
-            description = "Configures whether the state of area filters should be saved and recalled when switching task type or restarting the plugin."
+            description = "Configures whether the state of area filters should be saved and recalled when switching task type or restarting the plugin.",
+            hidden = true //todo This is hidden because it currently doesn't do anything
     )
     default boolean saveSubFilterState()
     {
         return true;
+    }
+
+    @Range(
+            min = 10
+    )
+    @ConfigItem(
+            position = 13,
+            keyName = "taskPanelBatchSize",
+            name = "Task Panel Batch Size",
+            description = "Configures the number of task panels to create in each batch when redrawing the task list panel."
+    )
+    default int taskPanelBatchSize()
+    {
+        return 20;
     }
 
     @ConfigItem(

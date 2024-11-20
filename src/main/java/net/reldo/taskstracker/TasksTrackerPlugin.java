@@ -222,6 +222,11 @@ public class TasksTrackerPlugin extends Plugin
 		{
 			pluginPanel.redraw();
 		}
+
+		if (configChanged.getKey().equals("taskPanelBatchSize"))
+		{
+			pluginPanel.taskListPanel.setBatchSize(config.taskPanelBatchSize());
+		}
 	}
 
 	@Subscribe
@@ -260,7 +265,7 @@ public class TasksTrackerPlugin extends Plugin
 			log.debug("forceUpdateVarpsFlag game tick");
 			trackerConfigStore.loadCurrentTaskTypeFromConfig();
 			forceVarpUpdate();
-			SwingUtilities.invokeLater(() -> pluginPanel.redraw());
+			SwingUtilities.invokeLater(() -> pluginPanel.drawNewTaskType());
 			forceUpdateVarpsFlag = false;
 			taskService.setTaskTypeChanged(false);
 		}
@@ -337,7 +342,7 @@ public class TasksTrackerPlugin extends Plugin
 		}
 		SwingUtilities.invokeLater(() ->
 		{
-			pluginPanel.redraw();
+			pluginPanel.drawNewTaskType();
 			pluginPanel.refresh(null);
 		});
 	}
