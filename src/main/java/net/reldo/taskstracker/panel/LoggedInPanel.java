@@ -84,11 +84,14 @@ public class LoggedInPanel extends JPanel
 		// taskTypeDropdown may become de-synced after profile change
 		String selectedTaskTypeJsonName = taskTypeDropdown.getItemAt(taskTypeDropdown.getSelectedIndex()).getValue()
 			.getTaskJsonName();
-		if (!selectedTaskTypeJsonName.equals(config.taskTypeJsonName())) {
+		if (!selectedTaskTypeJsonName.equals(config.taskTypeJsonName()))
+		{
 			log.debug("Task type dropdown de-synced, attempting to find current task type");
-			for (int i = 0; i < taskTypeDropdown.getItemCount(); i++) {
+			for (int i = 0; i < taskTypeDropdown.getItemCount(); i++)
+			{
 				ComboItem<TaskType> item = taskTypeDropdown.getItemAt(i);
-				if (item.getValue().getTaskJsonName().equals(config.taskTypeJsonName())) {
+				if (item.getValue().getTaskJsonName().equals(config.taskTypeJsonName()))
+				{
 					log.debug("Current task type found, setting selected task type");
 					taskTypeDropdown.setSelectedIndex(i);
 					break;
@@ -170,7 +173,8 @@ public class LoggedInPanel extends JPanel
 
 	public void tabChanged(ConfigValues.TaskListTabs newTab)
 	{
-		if (newTab != null) {
+		if (newTab != null)
+		{
 			saveCurrentTabFilters();
 			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "taskListTab", newTab);
 			refreshFilterButtonsFromConfig(newTab);
@@ -185,21 +189,24 @@ public class LoggedInPanel extends JPanel
 		Enum configValue;
 
 		if (plugin.getConfigManager().getConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "CompletedLock")
-			.equals("false")) {
+			.equals("false"))
+		{
 			configValue = ConfigValues.CompletedFilterValues.values()[completedFilterBtn.getState()];
 			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "CompletedValue",
 				configValue);
 		}
 
 		if (plugin.getConfigManager().getConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "TrackedLock")
-			.equals("false")) {
+			.equals("false"))
+		{
 			configValue = ConfigValues.TrackedFilterValues.values()[trackedFilterBtn.getState()];
 			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "TrackedValue",
 				configValue);
 		}
 
 		if (plugin.getConfigManager().getConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "IgnoredLock")
-			.equals("false")) {
+			.equals("false"))
+		{
 			configValue = ConfigValues.IgnoredFilterValues.values()[ignoredFilterBtn.getState()];
 			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tab + "IgnoredValue",
 				configValue);
@@ -209,9 +216,11 @@ public class LoggedInPanel extends JPanel
 	// TODO reduce duplication
 	public void refreshFilterButtonsFromConfig(ConfigValues.TaskListTabs tab)
 	{
-		switch (tab) {
-			case TAB_ONE :
-				if (!tabOne.isSelected()) {
+		switch (tab)
+		{
+			case TAB_ONE:
+				if (!tabOne.isSelected())
+				{
 					tabOne.setSelected(true);
 				}
 				trackedFilterBtn.setState(config.tab1TrackedValue().ordinal());
@@ -222,8 +231,9 @@ public class LoggedInPanel extends JPanel
 				ignoredFilterBtn.setEnabled(!config.tab1IgnoredLock());
 				actionAllFilterButtonsNoRefresh();
 				break;
-			case TAB_TWO :
-				if (!tabTwo.isSelected()) {
+			case TAB_TWO:
+				if (!tabTwo.isSelected())
+				{
 					tabTwo.setSelected(true);
 				}
 				trackedFilterBtn.setState(config.tab2TrackedValue().ordinal());
@@ -234,8 +244,9 @@ public class LoggedInPanel extends JPanel
 				ignoredFilterBtn.setEnabled(!config.tab2IgnoredLock());
 				actionAllFilterButtonsNoRefresh();
 				break;
-			case TAB_THREE :
-				if (!tabThree.isSelected()) {
+			case TAB_THREE:
+				if (!tabThree.isSelected())
+				{
 					tabThree.setSelected(true);
 				}
 				trackedFilterBtn.setState(config.tab3TrackedValue().ordinal());
@@ -246,7 +257,7 @@ public class LoggedInPanel extends JPanel
 				ignoredFilterBtn.setEnabled(!config.tab3IgnoredLock());
 				actionAllFilterButtonsNoRefresh();
 				break;
-			default :
+			default:
 				break;
 		}
 	}
@@ -291,13 +302,16 @@ public class LoggedInPanel extends JPanel
 		popupMenu.add(ignoredItem);
 
 		button.addChangeListener(e -> {
-			if (completedItem.isEnabled() != button.isSelected()) {
+			if (completedItem.isEnabled() != button.isSelected())
+			{
 				completedItem.setEnabled(button.isSelected());
 			}
-			if (trackedItem.isEnabled() != button.isSelected()) {
+			if (trackedItem.isEnabled() != button.isSelected())
+			{
 				trackedItem.setEnabled(button.isSelected());
 			}
-			if (ignoredItem.isEnabled() != button.isSelected()) {
+			if (ignoredItem.isEnabled() != button.isSelected())
+			{
 				ignoredItem.setEnabled(button.isSelected());
 			}
 		});
@@ -310,15 +324,18 @@ public class LoggedInPanel extends JPanel
 	private void refreshTabNames()
 	{
 		String tabName;
-		if (!tabOne.getText().equals(config.tab1Name())) {
+		if (!tabOne.getText().equals(config.tab1Name()))
+		{
 			tabName = config.tab1Name().isBlank() ? "Tab 1" : config.tab1Name();
 			tabOne.setText(tabName);
 		}
-		if (!tabTwo.getText().equals(config.tab2Name())) {
+		if (!tabTwo.getText().equals(config.tab2Name()))
+		{
 			tabName = config.tab2Name().isBlank() ? "Tab 2" : config.tab2Name();
 			tabTwo.setText(tabName);
 		}
-		if (!tabThree.getText().equals(config.tab3Name())) {
+		if (!tabThree.getText().equals(config.tab3Name()))
+		{
 			tabName = config.tab3Name().isBlank() ? "Tab 3" : config.tab3Name();
 			tabThree.setText(tabName);
 		}
@@ -475,20 +492,21 @@ public class LoggedInPanel extends JPanel
 		int state;
 		Enum configValue;
 
-		switch (filter) {
-			case "completed" :
+		switch (filter)
+		{
+			case "completed":
 				state = completedFilterBtn.getState();
 				configValue = ConfigValues.CompletedFilterValues.values()[state];
 				break;
-			case "tracked" :
+			case "tracked":
 				state = trackedFilterBtn.getState();
 				configValue = ConfigValues.TrackedFilterValues.values()[state];
 				break;
-			case "ignored" :
+			case "ignored":
 				state = ignoredFilterBtn.getState();
 				configValue = ConfigValues.IgnoredFilterValues.values()[state];
 				break;
-			default :
+			default:
 				log.debug("Filter button action failed due to unrecognised filter.");
 				return;
 		}
@@ -535,7 +553,8 @@ public class LoggedInPanel extends JPanel
 
 	private void updateCollapseButtonText()
 	{
-		if (taskService.getCurrentTaskType() == null) {
+		if (taskService.getCurrentTaskType() == null)
+		{
 			return;
 		}
 
@@ -544,7 +563,8 @@ public class LoggedInPanel extends JPanel
 		int countInclusive = 0;
 		int countExclusive = 0;
 
-		for (FilterConfig filterConfig : filters) {
+		for (FilterConfig filterConfig : filters)
+		{
 			String filterText = Optional
 				.ofNullable(plugin.getConfigManager().getConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME,
 					taskService.getCurrentTaskType().getFilterConfigPrefix() + filterConfig.getConfigKey()))
@@ -552,10 +572,12 @@ public class LoggedInPanel extends JPanel
 
 			int count = (filterText.isEmpty() || filterText.equals("-1")) ? 0 : filterText.split(",").length;
 
-			if (filterConfig.getFilterType().equals(FilterType.BUTTON_FILTER)) {
+			if (filterConfig.getFilterType().equals(FilterType.BUTTON_FILTER))
+			{
 				countInclusive += count;
 			}
-			if (filterConfig.getFilterType().equals(FilterType.DROPDOWN_FILTER)) {
+			if (filterConfig.getFilterType().equals(FilterType.DROPDOWN_FILTER))
+			{
 				countExclusive += count;
 			}
 		}
@@ -581,7 +603,8 @@ public class LoggedInPanel extends JPanel
 			taskTypeDropdown.addActionListener(e -> {
 				TaskType taskType = taskTypeDropdown.getItemAt(taskTypeDropdown.getSelectedIndex()).getValue();
 				taskService.setTaskType(taskType).thenAccept(wasTaskTypeChanged -> {
-					if (wasTaskTypeChanged) {
+					if (wasTaskTypeChanged)
+					{
 						SwingUtilities.invokeLater(() -> {
 							redraw();
 							plugin.refreshAllTasks();

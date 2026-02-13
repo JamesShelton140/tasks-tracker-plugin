@@ -77,12 +77,14 @@ public class TaskPanel extends JPanel
 
 		task.getTaskType().getFilters().forEach((filterConfig) -> {
 			String paramName = filterConfig.getValueName();
-			if (filterConfig.getFilterType().equals(FilterType.BUTTON_FILTER)) {
+			if (filterConfig.getFilterType().equals(FilterType.BUTTON_FILTER))
+			{
 				Filter filter = new ParamButtonFilter(plugin.getConfigManager(), paramName,
 					task.getTaskType().getTaskJsonName() + "." + filterConfig.getConfigKey());
 				filters.add(filter);
 			}
-			else if (filterConfig.getFilterType().equals(FilterType.DROPDOWN_FILTER)) {
+			else if (filterConfig.getFilterType().equals(FilterType.DROPDOWN_FILTER))
+			{
 				Filter filter = new ParamDropdownFilter(plugin.getConfigManager(), paramName,
 					task.getTaskType().getTaskJsonName() + "." + filterConfig.getConfigKey());
 				filters.add(filter);
@@ -104,16 +106,19 @@ public class TaskPanel extends JPanel
 		tooltipText.append(task.getDescription()).append(HtmlUtil.HTML_LINE_BREAK);
 
 		String skillSection = getSkillSectionHtml();
-		if (skillSection != null) {
+		if (skillSection != null)
+		{
 			tooltipText.append(skillSection).append(HtmlUtil.HTML_LINE_BREAK);
 		}
 
 		String wikiNotes = task.getTaskDefinition().getWikiNotes();
-		if (wikiNotes != null) {
+		if (wikiNotes != null)
+		{
 			tooltipText.append(HtmlUtil.HTML_LINE_BREAK).append(wikiNotes).append(HtmlUtil.HTML_LINE_BREAK);
 		}
 
-		if (task.isCompleted()) {
+		if (task.isCompleted())
+		{
 			tooltipText.append(HtmlUtil.HTML_LINE_BREAK);
 			String datePattern = "MM-dd-yyyy hh:mma";
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
@@ -121,7 +126,8 @@ public class TaskPanel extends JPanel
 		}
 
 		Float completionPercent = task.getTaskDefinition().getCompletionPercent();
-		if (completionPercent != null) {
+		if (completionPercent != null)
+		{
 			tooltipText.append(HtmlUtil.HTML_LINE_BREAK).append("Players Completed: ").append(completionPercent)
 				.append('%');
 		}
@@ -131,30 +137,37 @@ public class TaskPanel extends JPanel
 
 	public Color getTaskBackgroundColor()
 	{
-		if (plugin.playerSkills == null) {
+		if (plugin.playerSkills == null)
+		{
 			return ColorScheme.DARKER_GRAY_COLOR;
 		}
 
-		if (task.isCompleted()) {
+		if (task.isCompleted())
+		{
 			return Colors.COMPLETED_BACKGROUND_COLOR;
 		}
 
-		if (task.getTaskDefinition().getSkills() == null || task.getTaskDefinition().getSkills().size() == 0) {
+		if (task.getTaskDefinition().getSkills() == null || task.getTaskDefinition().getSkills().size() == 0)
+		{
 			return ColorScheme.DARKER_GRAY_COLOR;
 		}
 
-		for (TaskDefinitionSkill requiredSkill : task.getTaskDefinition().getSkills()) {
+		for (TaskDefinitionSkill requiredSkill : task.getTaskDefinition().getSkills())
+		{
 			Skill skill;
 			String requiredSkillName = requiredSkill.getSkill().toUpperCase();
-			try {
+			try
+			{
 				skill = Skill.valueOf(requiredSkillName);
 			}
-			catch (IllegalArgumentException ex) {
+			catch (IllegalArgumentException ex)
+			{
 				log.error("invalid skill name " + requiredSkillName);
 				continue;
 			}
 
-			if (plugin.playerSkills[skill.ordinal()] < requiredSkill.getLevel()) {
+			if (plugin.playerSkills[skill.ordinal()] < requiredSkill.getLevel())
+			{
 				return Colors.UNQUALIFIED_BACKGROUND_COLOR;
 			}
 		}
@@ -215,22 +228,26 @@ public class TaskPanel extends JPanel
 		container.add(buttons, BorderLayout.EAST);
 
 		BufferedImage tierSprite = task.getTaskType().getTierSprites().get(task.getTier());
-		if (tierSprite != null) {
+		if (tierSprite != null)
+		{
 			tierIcon.setMinimumSize(new Dimension(Constants.ITEM_SPRITE_WIDTH, Constants.ITEM_SPRITE_HEIGHT));
 			tierIcon.setIcon(new ImageIcon(tierSprite));
 			tierIcon.setBorder(new EmptyBorder(0, 0, 0, 5));
 		}
-		else {
+		else
+		{
 			tierIcon.setBorder(new EmptyBorder(0, 0, 0, 0));
 		}
 
 		add(container, BorderLayout.NORTH);
 
-		addMouseListener(new MouseAdapter() {
+		addMouseListener(new MouseAdapter()
+		{
 			@Override
 			public void mouseReleased(MouseEvent e)
 			{
-				if (e.isPopupTrigger()) {
+				if (e.isPopupTrigger())
+				{
 					JPopupMenu menu = createWikiPopupMenu();
 					menu.show(e.getComponent(), e.getX(), e.getY());
 				}
@@ -251,15 +268,19 @@ public class TaskPanel extends JPanel
 	{
 		String wikiUrl = String.format("https://oldschool.runescape.wiki/%s",
 			URLEncoder.encode(task.getName().replace(' ', '_'), StandardCharsets.UTF_8));
-		if (Desktop.isDesktopSupported()) {
-			try {
+		if (Desktop.isDesktopSupported())
+		{
+			try
+			{
 				Desktop.getDesktop().browse(new URI(wikiUrl));
 			}
-			catch (IOException | URISyntaxException ex) {
+			catch (IOException | URISyntaxException ex)
+			{
 				ex.printStackTrace();
 			}
 		}
-		else {
+		else
+		{
 			log.warn("Desktop browsing is not supported on this system.");
 		}
 	}
@@ -282,33 +303,41 @@ public class TaskPanel extends JPanel
 		String nameLowercase = task.getName().toLowerCase();
 		String descriptionLowercase = task.getDescription().toLowerCase();
 		if (plugin.taskTextFilter != null && !nameLowercase.contains(plugin.taskTextFilter)
-			&& !descriptionLowercase.contains(plugin.taskTextFilter)) {
+			&& !descriptionLowercase.contains(plugin.taskTextFilter))
+		{
 			return false;
 		}
 
 		TasksTrackerConfig config = plugin.getConfig();
 
-		for (Filter filter : filters) {
-			if (!filter.meetsCriteria(task)) {
+		for (Filter filter : filters)
+		{
+			if (!filter.meetsCriteria(task))
+			{
 				return false;
 			}
 		}
 
-		if (config.completedFilter().equals(CompletedFilterValues.INCOMPLETE) && task.isCompleted()) {
+		if (config.completedFilter().equals(CompletedFilterValues.INCOMPLETE) && task.isCompleted())
+		{
 			return false;
 		}
-		if (config.completedFilter().equals(CompletedFilterValues.COMPLETE) && !task.isCompleted()) {
-			return false;
-		}
-
-		if (config.ignoredFilter().equals(IgnoredFilterValues.NOT_IGNORED) && task.isIgnored()) {
-			return false;
-		}
-		if (config.ignoredFilter().equals(IgnoredFilterValues.IGNORED) && !task.isIgnored()) {
+		if (config.completedFilter().equals(CompletedFilterValues.COMPLETE) && !task.isCompleted())
+		{
 			return false;
 		}
 
-		if (config.trackedFilter().equals(TrackedFilterValues.UNTRACKED) && task.isTracked()) {
+		if (config.ignoredFilter().equals(IgnoredFilterValues.NOT_IGNORED) && task.isIgnored())
+		{
+			return false;
+		}
+		if (config.ignoredFilter().equals(IgnoredFilterValues.IGNORED) && !task.isIgnored())
+		{
+			return false;
+		}
+
+		if (config.trackedFilter().equals(TrackedFilterValues.UNTRACKED) && task.isTracked())
+		{
 			return false;
 		}
 		return !config.trackedFilter().equals(TrackedFilterValues.TRACKED) || task.isTracked();
@@ -344,27 +373,33 @@ public class TaskPanel extends JPanel
 	private String getSkillSectionHtml()
 	{
 		List<TaskDefinitionSkill> requiredSkills = task.getTaskDefinition().getSkills();
-		if (requiredSkills == null) {
+		if (requiredSkills == null)
+		{
 			return null;
 		}
 		StringBuilder skillSection = new StringBuilder();
 		skillSection.append(HtmlUtil.HTML_LINE_BREAK);
-		for (TaskDefinitionSkill requiredSkill : requiredSkills) {
+		for (TaskDefinitionSkill requiredSkill : requiredSkills)
+		{
 			Skill skill;
-			try {
+			try
+			{
 				skill = Skill.valueOf(requiredSkill.getSkill().toUpperCase());
 			}
-			catch (IllegalArgumentException ex) {
+			catch (IllegalArgumentException ex)
+			{
 				log.warn("unknown skill: {}", requiredSkill.getSkill().toUpperCase(), ex);
 				continue;
 			}
 
 			Integer requiredLevel = requiredSkill.getLevel();
 			int playerLevel = -1;
-			if (requiredLevel == null) {
+			if (requiredLevel == null)
+			{
 				continue;
 			}
-			if (plugin.playerSkills != null) {
+			if (plugin.playerSkills != null)
+			{
 				playerLevel = plugin.playerSkills[skill.ordinal()];
 			}
 			String skillMessage = getSkillRequirementHtml(requiredSkill.getSkill().toLowerCase(), playerLevel,
@@ -386,7 +421,8 @@ public class TaskPanel extends JPanel
 	private String getPointsTooltipText()
 	{
 		int points = this.task.getPoints();
-		if (points == 0) {
+		if (points == 0)
+		{
 			return "";
 		}
 		return " - " + points + " points";

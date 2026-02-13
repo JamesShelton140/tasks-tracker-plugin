@@ -13,7 +13,8 @@ public class TasksSummary
 	public TasksSummary(Collection<TaskFromStruct> tasks)
 	{
 		tasks.forEach(task -> {
-			if (task.isTracked()) {
+			if (task.isTracked())
+			{
 				trackedTasksCount++;
 				int points = task.getPoints();
 				log.debug("TasksSummary {} {}", task.getName(), points);

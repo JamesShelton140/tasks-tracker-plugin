@@ -62,7 +62,8 @@ public class TaskService
 	{
 		return getTaskTypesByJsonName().thenCompose(taskTypes -> {
 			TaskType newTaskType = taskTypes.get(taskTypeJsonName);
-			if (newTaskType == null) {
+			if (newTaskType == null)
+			{
 				log.error("unsupported task type {}, falling back to COMBAT", taskTypeJsonName);
 				newTaskType = taskTypes.get("COMBAT");
 			}
@@ -73,7 +74,8 @@ public class TaskService
 	private CompletableFuture<Boolean> loadAllTasksStructData(Collection<TaskFromStruct> tasks)
 	{
 		Collection<CompletableFuture<Boolean>> taskFutures = new ArrayList<>();
-		for (TaskFromStruct task : tasks) {
+		for (TaskFromStruct task : tasks)
+		{
 			CompletableFuture<Boolean> taskFuture = new CompletableFuture<>();
 			clientThread.invoke(() -> {
 				boolean isTaskLoaded = task.loadStructData(client);
@@ -82,8 +84,10 @@ public class TaskService
 			taskFutures.add(taskFuture);
 		}
 		return CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).thenApply(v -> {
-			for (CompletableFuture<Boolean> future : taskFutures) {
-				if (!future.join()) {
+			for (CompletableFuture<Boolean> future : taskFutures)
+			{
+				if (!future.join())
+				{
 					return false;
 				}
 			}
@@ -94,7 +98,8 @@ public class TaskService
 	public CompletableFuture<Boolean> setTaskType(TaskType newTaskType)
 	{
 		log.debug("setTaskType {}", newTaskType.getTaskJsonName());
-		if (newTaskType.equals(currentTaskType)) {
+		if (newTaskType.equals(currentTaskType))
+		{
 			log.debug("Skipping setTaskType, same task type selected");
 			return CompletableFuture.completedFuture(false);
 		}
@@ -103,8 +108,10 @@ public class TaskService
 			newTaskType.getTaskJsonName());
 
 		// Complete creation of any GLOBAL value type filterConfigs
-		for (FilterConfig filterConfig : currentTaskType.getFilters()) {
-			if (filterConfig.getValueType().equals(FilterValueType.GLOBAL)) {
+		for (FilterConfig filterConfig : currentTaskType.getFilters())
+		{
+			if (filterConfig.getValueType().equals(FilterValueType.GLOBAL))
+			{
 				// Set valueType to the one required by the global filter
 				FilterConfig globalFilterConfig = filterService.getGlobalFilterByKey(filterConfig.getConfigKey());
 				filterConfig.setValueType(globalFilterConfig.getValueType());
@@ -125,29 +132,34 @@ public class TaskService
 
 		List<TaskFromStruct> newTasks = new ArrayList<>();
 		return newTaskType.loadTaskTypeDataAsync().thenCompose((isTaskTypeLoaded) -> {
-			if (!isTaskTypeLoaded) {
+			if (!isTaskTypeLoaded)
+			{
 				log.error("Error loading task type during setTaskType");
 				return CompletableFuture.completedFuture(false);
 			}
 
 			CompletableFuture<Boolean> future = new CompletableFuture<>();
 			futureExecutor.submit(() -> {
-				try {
+				try
+				{
 					Collection<TaskDefinition> taskDefinitions = taskDataClient
 						.getTaskDefinitions(currentTaskType.getTaskJsonName());
-					for (TaskDefinition definition : taskDefinitions) {
+					for (TaskDefinition definition : taskDefinitions)
+					{
 						TaskFromStruct task = new TaskFromStruct(currentTaskType, definition);
 						newTasks.add(task);
 					}
 					loadAllTasksStructData(newTasks).thenApply(future::complete);
 				}
-				catch (Exception e3) {
+				catch (Exception e3)
+				{
 					future.completeExceptionally(e3);
 				}
 			});
 			return future;
 		}).thenCompose(areTasksLoaded -> {
-			if (!areTasksLoaded) {
+			if (!areTasksLoaded)
+			{
 				return CompletableFuture.completedFuture(false);
 			}
 
@@ -167,7 +179,8 @@ public class TaskService
 					Comparator.comparing((TaskFromStruct task) -> task.getStringParam(paramName)));
 			});
 			// todo: make this less of a special case.
-			if (tasks.stream().anyMatch(task -> task.getCompletionPercent() != null)) {
+			if (tasks.stream().anyMatch(task -> task.getCompletionPercent() != null))
+			{
 				sortedIndexes.put("completion %", null);
 				addSortedIndex("completion %", (TaskFromStruct task1, TaskFromStruct task2) -> {
 					Float comp1 = task1.getTaskDefinition().getCompletionPercent() != null
@@ -193,7 +206,8 @@ public class TaskService
 		List<TaskFromStruct> sortedTasks = tasks.stream().sorted(comparator)
 			.collect(Collectors.toCollection(ArrayList::new));
 		int[] sortedIndex = new int[tasks.size()];
-		for (int i = 0; i < sortedTasks.size(); i++) {
+		for (int i = 0; i < sortedTasks.size(); i++)
+		{
 			sortedIndex[i] = tasks.indexOf(sortedTasks.get(i));
 		}
 		sortedIndexes.put(paramName, sortedIndex);
@@ -201,10 +215,12 @@ public class TaskService
 
 	public int getSortedTaskIndex(String sortCriteria, int position)
 	{
-		if (sortedIndexes.containsKey(sortCriteria)) {
+		if (sortedIndexes.containsKey(sortCriteria))
+		{
 			return sortedIndexes.get(sortCriteria)[position];
 		}
-		else {
+		else
+		{
 			return position;
 		}
 	}
@@ -226,25 +242,30 @@ public class TaskService
 	 */
 	public CompletableFuture<HashMap<String, TaskType>> getTaskTypesByJsonName()
 	{
-		if (cachedTaskTypes.size() > 0) {
+		if (cachedTaskTypes.size() > 0)
+		{
 			return CompletableFuture.completedFuture(cachedTaskTypes);
 		}
 
-		try {
+		try
+		{
 			CompletableFuture<HashMap<String, TaskType>> future = new CompletableFuture<>();
 			futureExecutor.submit(() -> {
-				try {
+				try
+				{
 					cachedTaskTypes = taskDataClient.getTaskTypes();
 					future.complete(cachedTaskTypes);
 				}
-				catch (Exception e) {
+				catch (Exception e)
+				{
 					future.completeExceptionally(e);
 				}
 			});
 
 			return future;
 		}
-		catch (Exception ex) {
+		catch (Exception ex)
+		{
 			log.error("Unable to populate task types from data client", ex);
 			return CompletableFuture.completedFuture(new HashMap<>());
 		}
@@ -253,22 +274,26 @@ public class TaskService
 	public CompletableFuture<HashMap<Integer, String>> getStringEnumValuesAsync(String enumName)
 	{
 		Integer enumId = currentTaskType.getStringEnumMap().get(enumName);
-		if (enumId == null) {
+		if (enumId == null)
+		{
 			return CompletableFuture.completedFuture(new HashMap<>());
 		}
 
 		CompletableFuture<HashMap<Integer, String>> future = new CompletableFuture<>();
 		clientThread.invoke(() -> {
-			try {
+			try
+			{
 				EnumComposition enumComposition = client.getEnum(enumId);
 				int[] keys = enumComposition.getKeys();
 				HashMap<Integer, String> map = new HashMap<>();
-				for (int key : keys) {
+				for (int key : keys)
+				{
 					map.put(key, enumComposition.getStringValue(key));
 				}
 				future.complete(map);
 			}
-			catch (Exception ex) {
+			catch (Exception ex)
+			{
 				log.error("Error getting string enum values", ex);
 				future.completeExceptionally(ex);
 			}
@@ -280,15 +305,18 @@ public class TaskService
 	{
 		String currentTaskTypeName = currentTaskType.getTaskJsonName();
 		String saveTaskTypeName = saveTaskType.getTaskJsonName();
-		if (!currentTaskTypeName.equals(saveTaskTypeName)) {
+		if (!currentTaskTypeName.equals(saveTaskTypeName))
+		{
 			log.warn("Cannot apply save, task types do not match current={} save={}", currentTaskTypeName,
 				saveTaskTypeName);
 			return;
 		}
 
-		for (TaskFromStruct task : getTasks()) {
+		for (TaskFromStruct task : getTasks())
+		{
 			ConfigTaskSave configTaskSave = saveData.get(task.getStructId());
-			if (configTaskSave == null) {
+			if (configTaskSave == null)
+			{
 				continue;
 			}
 			task.loadConfigSave(configTaskSave);

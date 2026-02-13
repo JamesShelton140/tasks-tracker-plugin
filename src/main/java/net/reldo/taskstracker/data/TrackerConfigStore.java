@@ -41,24 +41,28 @@ public class TrackerConfigStore
 	public void loadCurrentTaskTypeFromConfig()
 	{
 		TaskType currentTaskType = taskService.getCurrentTaskType();
-		if (currentTaskType == null) {
+		if (currentTaskType == null)
+		{
 			log.debug("loadTaskTypeFromConfig type is null, skipping");
 			return;
 		}
 		log.debug("loadTaskTypeFromConfig {}", currentTaskType.getName());
 		String configKey = getCurrentTaskTypeConfigKey();
 		String configJson = configManager.getRSProfileConfiguration(CONFIG_GROUP_NAME, configKey);
-		if (configJson == null) {
+		if (configJson == null)
+		{
 			log.debug("No save information for task type {}, not applying save", currentTaskType.getName());
 			return;
 		}
 
 		Type deserializeType = TypeToken.getParameterized(HashMap.class, Integer.class, ConfigTaskSave.class).getType();
-		try {
+		try
+		{
 			HashMap<Integer, ConfigTaskSave> saveData = customGson.fromJson(configJson, deserializeType);
 			taskService.applySave(currentTaskType, saveData);
 		}
-		catch (JsonParseException ex) {
+		catch (JsonParseException ex)
+		{
 			log.error("{} {} json invalid. wiping saved data", CONFIG_GROUP_NAME, configKey, ex);
 			configManager.unsetRSProfileConfiguration(CONFIG_GROUP_NAME, configKey);
 		}

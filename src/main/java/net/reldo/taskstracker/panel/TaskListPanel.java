@@ -45,7 +45,8 @@ public class TaskListPanel extends JScrollPane
 
 		FixedWidthPanel taskListListPanelWrapper = new FixedWidthPanel();
 
-		for (int i = 0; i < taskListBufferCount; i++) {
+		for (int i = 0; i < taskListBufferCount; i++)
+		{
 			taskListBuffers.add(new TaskListListPanel(plugin));
 			taskListListPanelWrapper.add(taskListBuffers.get(i));
 		}
@@ -58,7 +59,8 @@ public class TaskListPanel extends JScrollPane
 
 	private void setCurrentTaskListListPanel(int index)
 	{
-		if (index != currentTaskListBufferIndex) {
+		if (index != currentTaskListBufferIndex)
+		{
 			taskListBuffers.get(currentTaskListBufferIndex).setVisible(false);
 			taskListBuffers.get(index).setVisible(true);
 			currentTaskListBufferIndex = index;
@@ -103,11 +105,13 @@ public class TaskListPanel extends JScrollPane
 	public void refreshAllTasks()
 	{
 		log.debug("TaskListPanel.refreshAllTasks");
-		if (!SwingUtilities.isEventDispatchThread()) {
+		if (!SwingUtilities.isEventDispatchThread())
+		{
 			log.error("Task list panel refresh failed - not event dispatch thread.");
 			return;
 		}
-		for (TaskPanel taskPanel : taskPanelsByStructId.values()) {
+		for (TaskPanel taskPanel : taskPanelsByStructId.values())
+		{
 			taskPanel.refresh();
 		}
 		refreshEmptyPanel();
@@ -116,11 +120,13 @@ public class TaskListPanel extends JScrollPane
 	public void refreshMultipleTasks(Collection<TaskFromStruct> tasks)
 	{
 		log.debug("TaskListPanel.refreshMultipleTasks {}", tasks.size());
-		if (!SwingUtilities.isEventDispatchThread()) {
+		if (!SwingUtilities.isEventDispatchThread())
+		{
 			log.error("Task list panel refresh failed - not event dispatch thread.");
 			return;
 		}
-		for (TaskFromStruct task : tasks) {
+		for (TaskFromStruct task : tasks)
+		{
 			refresh(task);
 		}
 	}
@@ -133,11 +139,13 @@ public class TaskListPanel extends JScrollPane
 
 	private void refresh(TaskFromStruct task)
 	{
-		if (!SwingUtilities.isEventDispatchThread()) {
+		if (!SwingUtilities.isEventDispatchThread())
+		{
 			log.error("Task list panel refresh failed - not event dispatch thread.");
 			return;
 		}
-		if (task == null) {
+		if (task == null)
+		{
 			log.debug("Attempted to refresh null task");
 			return;
 		}
@@ -145,7 +153,8 @@ public class TaskListPanel extends JScrollPane
 		emptyTasks.setVisible(false);
 
 		TaskPanel panel = taskPanelsByStructId.get(task.getStructId());
-		if (panel != null) {
+		if (panel != null)
+		{
 			panel.refresh();
 		}
 
@@ -157,10 +166,12 @@ public class TaskListPanel extends JScrollPane
 	{
 		boolean isAnyTaskPanelVisible = taskPanelsByStructId.values().stream().anyMatch(TaskPanel::isVisible);
 
-		if (!isAnyTaskPanelVisible) {
+		if (!isAnyTaskPanelVisible)
+		{
 			emptyTasks.setVisible(true);
 		}
-		else {
+		else
+		{
 			emptyTasks.setVisible(false);
 		}
 	}
@@ -171,7 +182,8 @@ public class TaskListPanel extends JScrollPane
 		// 'SKILLS' (any skill) or 'TOTAL LEVEL' as a requirement.
 		taskPanelsByStructId.values().stream().filter(tp -> {
 			List<TaskDefinitionSkill> skillsList = tp.task.getTaskDefinition().getSkills();
-			if (skillsList == null || skillsList.isEmpty()) {
+			if (skillsList == null || skillsList.isEmpty())
+			{
 				return false;
 			}
 
@@ -215,13 +227,15 @@ public class TaskListPanel extends JScrollPane
 		public void drawNewTaskType()
 		{
 			log.debug("TaskListPanel.drawNewTaskType");
-			if (SwingUtilities.isEventDispatchThread()) {
+			if (SwingUtilities.isEventDispatchThread())
+			{
 				log.debug("TaskListPanel creating panels");
 				taskPanelsByStructId.clear();
 				add(emptyTasks);
 
 				List<TaskFromStruct> tasks = taskService.getTasks();
-				if (tasks == null || tasks.isEmpty()) {
+				if (tasks == null || tasks.isEmpty())
+				{
 					emptyTasks.setVisible(true);
 					return;
 				}
@@ -237,12 +251,14 @@ public class TaskListPanel extends JScrollPane
 					add(taskPanel);
 					newTaskPanels.add(taskPanel);
 					taskPanelsByStructId.put(task.getStructId(), taskPanel);
-					if (indexPosition == (batchSize - 1)) {
+					if (indexPosition == (batchSize - 1))
+					{
 						taskPanels = newTaskPanels; // replace taskPanels list at end of first batch
 					}
 				});
 			}
-			else {
+			else
+			{
 				log.error("Task list panel drawNewTaskType failed - not event dispatch thread.");
 			}
 		}
@@ -250,15 +266,19 @@ public class TaskListPanel extends JScrollPane
 		public void redraw()
 		{
 			log.debug("TaskListPanel.redraw");
-			if (SwingUtilities.isEventDispatchThread()) {
-				if (taskPanels == null || taskPanels.isEmpty()) {
+			if (SwingUtilities.isEventDispatchThread())
+			{
+				if (taskPanels == null || taskPanels.isEmpty())
+				{
 					emptyTasks.setVisible(true);
 					return;
 				}
 
-				for (int indexPosition = 0; indexPosition < taskPanels.size(); indexPosition++) {
+				for (int indexPosition = 0; indexPosition < taskPanels.size(); indexPosition++)
+				{
 					int adjustedIndexPosition = indexPosition;
-					if (plugin.getConfig().sortDirection().equals(ConfigValues.SortDirections.DESCENDING)) {
+					if (plugin.getConfig().sortDirection().equals(ConfigValues.SortDirections.DESCENDING))
+					{
 						adjustedIndexPosition = taskPanels.size() - (adjustedIndexPosition + 1);
 					}
 					TaskPanel taskPanel = taskPanels
@@ -268,7 +288,8 @@ public class TaskListPanel extends JScrollPane
 
 				SwingUtilities.invokeLater(TaskListPanel.this::refreshAllTasks);
 			}
-			else {
+			else
+			{
 				log.error("Task list panel redraw failed - not event dispatch thread.");
 			}
 		}
@@ -283,12 +304,15 @@ public class TaskListPanel extends JScrollPane
 		{
 			log.debug("TaskListPanel.processBatch {}", batch);
 
-			for (int index = 0; index < batchSize; index++) {
+			for (int index = 0; index < batchSize; index++)
+			{
 				int indexPosition = index + (batch * batchSize);
-				if (indexPosition < objectCount) {
+				if (indexPosition < objectCount)
+				{
 					method.accept(indexPosition);
 				}
-				else {
+				else
+				{
 					break;
 				}
 			}
@@ -299,10 +323,12 @@ public class TaskListPanel extends JScrollPane
 
 			// queue next batch if not done or refresh after last batch
 			int batchIndex = batch + 1;
-			if (batchIndex * batchSize < objectCount) {
+			if (batchIndex * batchSize < objectCount)
+			{
 				SwingUtilities.invokeLater(() -> processBatch(batchIndex, objectCount, method));
 			}
-			else {
+			else
+			{
 				SwingUtilities.invokeLater(TaskListPanel.this::refreshAllTasks);
 			}
 		}

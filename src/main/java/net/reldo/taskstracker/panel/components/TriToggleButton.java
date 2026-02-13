@@ -11,7 +11,8 @@ public class TriToggleButton extends MultiToggleButton
 
 	public boolean setIcons(Icon icon0, Icon icon1, Icon icon2)
 	{
-		if (icon0 == null || icon1 == null || icon2 == null) {
+		if (icon0 == null || icon1 == null || icon2 == null)
+		{
 			return false;
 		}
 
@@ -24,7 +25,8 @@ public class TriToggleButton extends MultiToggleButton
 
 	public boolean setToolTips(String tooltip0, String tooltip1, String tooltip2)
 	{
-		if (tooltip0 == null || tooltip1 == null || tooltip2 == null) {
+		if (tooltip0 == null || tooltip1 == null || tooltip2 == null)
+		{
 			return false;
 		}
 

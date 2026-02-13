@@ -29,7 +29,7 @@ public class TaskType
 	private final TaskTypeDefinition definition;
 
 	public TaskType(Client client, ClientThread clientThread, SpriteManager spriteManager,
-		TaskTypeDefinition taskTypeDefinition)
+					TaskTypeDefinition taskTypeDefinition)
 	{
 		this.client = client;
 		this.clientThread = clientThread;
@@ -41,7 +41,8 @@ public class TaskType
 	{
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 		clientThread.invoke(() -> {
-			try {
+			try
+			{
 				getButtonFiltersSpriteIds().forEach((spriteId) -> {
 					BufferedImage spriteImage = spriteManager.getSprite(spriteId, 0);
 					spritesById.put(spriteId, spriteImage);
@@ -51,17 +52,20 @@ public class TaskType
 					BufferedImage spriteImage = spriteManager.getSprite(spriteId, 0);
 					tierSprites.put(tierId, spriteImage);
 				});
-				if (definition.getIntEnumMap().containsKey("tierPoints")) {
+				if (definition.getIntEnumMap().containsKey("tierPoints"))
+				{
 					int enumId = definition.getIntEnumMap().get("tierPoints");
 					EnumComposition enumComposition = client.getEnum(enumId);
 					int[] keys = enumComposition.getKeys();
-					for (int key : keys) {
+					for (int key : keys)
+					{
 						tierPoints.put(key, enumComposition.getIntValue(key));
 					}
 				}
 				future.complete(true);
 			}
-			catch (Exception e) {
+			catch (Exception e)
+			{
 				future.completeExceptionally(e);
 			}
 		});
@@ -80,10 +84,12 @@ public class TaskType
 		definition.getFilters().stream()
 			.filter((filterConfig) -> filterConfig.getFilterType().equals(FilterType.BUTTON_FILTER))
 			.forEach((filterConfig) -> {
-				if (filterConfig.getCustomItems() != null) {
+				if (filterConfig.getCustomItems() != null)
+				{
 					filterConfig.getCustomItems().forEach((customSprite) -> {
 						Integer spriteId = customSprite.getSpriteId();
-						if (spriteId == null) {
+						if (spriteId == null)
+						{
 							return;
 						}
 						sprites.add(spriteId);

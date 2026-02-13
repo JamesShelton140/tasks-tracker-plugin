@@ -17,7 +17,8 @@ public class SearchBox extends IconTextField
 		this.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
 		this.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		this.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
-		this.getDocument().addDocumentListener(new DocumentListener() {
+		this.getDocument().addDocumentListener(new DocumentListener()
+		{
 			@Override
 			public void insertUpdate(DocumentEvent documentEvent)
 			{

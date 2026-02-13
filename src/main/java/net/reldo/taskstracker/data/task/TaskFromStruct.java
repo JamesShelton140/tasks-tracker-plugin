@@ -61,10 +61,12 @@ public class TaskFromStruct
 	{
 		assert client.isClientThread();
 
-		if (structLoaded) {
+		if (structLoaded)
+		{
 			return true;
 		}
-		try {
+		try
+		{
 			// log.debug("LOADING STRUCT DATA " + structId);
 			structComposition = client.getStructComposition(structId);
 			taskType.getIntParamMap().forEach((paramName, paramId) -> {
@@ -78,7 +80,8 @@ public class TaskFromStruct
 				stringParams.put(paramName, value);
 			});
 		}
-		catch (Exception ex) {
+		catch (Exception ex)
+		{
 			log.error("error loading struct data {}", ex, ex);
 			return false;
 		}
@@ -94,11 +97,13 @@ public class TaskFromStruct
 
 	public int getPoints()
 	{
-		if (taskType.getTierPoints().size() == 0) {
+		if (taskType.getTierPoints().size() == 0)
+		{
 			return 0;
 		}
 		Integer points = taskType.getTierPoints().get(getTier());
-		if (points == null) {
+		if (points == null)
+		{
 			return 0;
 		}
 		return points;
@@ -107,7 +112,8 @@ public class TaskFromStruct
 	public void setCompleted(boolean completed)
 	{
 		long now = Instant.now().toEpochMilli();
-		if (completed && completedOn > 0 && completedOn <= now) {
+		if (completed && completedOn > 0 && completedOn <= now)
+		{
 			return;
 		}
 		completedOn = completed ? now : 0;
@@ -121,7 +127,8 @@ public class TaskFromStruct
 	public void setTracked(boolean state)
 	{
 		long now = Instant.now().toEpochMilli();
-		if (state && trackedOn > 0 && trackedOn <= now) {
+		if (state && trackedOn > 0 && trackedOn <= now)
+		{
 			return;
 		}
 		trackedOn = state ? now : 0;
@@ -135,7 +142,8 @@ public class TaskFromStruct
 	public void setIgnored(boolean state)
 	{
 		long now = Instant.now().toEpochMilli();
-		if (state && ignoredOn > 0 && ignoredOn <= now) {
+		if (state && ignoredOn > 0 && ignoredOn <= now)
+		{
 			return;
 		}
 		ignoredOn = state ? now : 0;
@@ -162,15 +170,18 @@ public class TaskFromStruct
 	private void setMostRecentDates(long completedOn, long ignoredOn, long trackedOn)
 	{
 		// Older completions take priority; incomplete (0) also takes priority
-		if (completedOn < this.getCompletedOn()) {
+		if (completedOn < this.getCompletedOn())
+		{
 			this.setCompletedOn(completedOn);
 		}
 		// Newer ignores take priority
-		if (ignoredOn > this.getIgnoredOn()) {
+		if (ignoredOn > this.getIgnoredOn())
+		{
 			this.setIgnoredOn(ignoredOn);
 		}
 		// Newer tracks take priority
-		if (trackedOn > this.getTrackedOn()) {
+		if (trackedOn > this.getTrackedOn())
+		{
 			this.setTrackedOn(trackedOn);
 		}
 	}

@@ -24,7 +24,7 @@ public class TasksTrackerPluginPanel extends PluginPanel
 	private boolean loggedInPanelVisible = false;
 
 	public TasksTrackerPluginPanel(TasksTrackerPlugin plugin, TasksTrackerConfig config, SpriteManager spriteManager,
-		TaskService taskService)
+								   TaskService taskService)
 	{
 		super(false);
 
@@ -49,53 +49,63 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 	public void redraw()
 	{
-		if (loggedInPanelVisible) {
+		if (loggedInPanelVisible)
+		{
 			loggedInPanel.redraw();
 		}
 	}
 
 	public void refreshAllTasks()
 	{
-		if (loggedInPanelVisible) {
+		if (loggedInPanelVisible)
+		{
 			loggedInPanel.refreshAllTasks();
 		}
 	}
 
 	public void refreshFilterButtonsFromConfig(ConfigValues.TaskListTabs tab)
 	{
-		if (loggedInPanelVisible) {
+		if (loggedInPanelVisible)
+		{
 			loggedInPanel.refreshFilterButtonsFromConfig(tab);
 		}
 	}
 
 	public void setLoggedIn(boolean loggedIn)
 	{
-		if (SwingUtilities.isEventDispatchThread()) {
+		if (SwingUtilities.isEventDispatchThread())
+		{
 			updateVisiblePanel(loggedIn);
 		}
-		else {
+		else
+		{
 			log.error("Failed to update loggedIn state - not event dispatch thread.");
 		}
 	}
 
 	public void hideLoggedInPanel()
 	{
-		if (SwingUtilities.isEventDispatchThread()) {
+		if (SwingUtilities.isEventDispatchThread())
+		{
 			updateVisiblePanel(false);
 		}
-		else {
+		else
+		{
 			log.error("Failed to update logged in panel visibility - not event dispatch thread.");
 		}
 	}
 
 	private void updateVisiblePanel(boolean loggedInPanelVisible)
 	{
-		if (loggedInPanelVisible != this.loggedInPanelVisible) {
-			if (loggedInPanelVisible) {
+		if (loggedInPanelVisible != this.loggedInPanelVisible)
+		{
+			if (loggedInPanelVisible)
+			{
 				loggedOutPanel.setVisible(false);
 				loggedInPanel.setVisible(true);
 			}
-			else {
+			else
+			{
 				loggedInPanel.setVisible(false);
 				loggedOutPanel.setVisible(true);
 			}
@@ -108,7 +118,8 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 	public void drawNewTaskType()
 	{
-		if (loggedInPanelVisible) {
+		if (loggedInPanelVisible)
+		{
 			loggedInPanel.drawNewTaskType();
 		}
 
@@ -116,7 +127,8 @@ public class TasksTrackerPluginPanel extends PluginPanel
 
 	public void saveCurrentTabFilters()
 	{
-		if (loggedInPanelVisible) {
+		if (loggedInPanelVisible)
+		{
 			loggedInPanel.saveCurrentTabFilters();
 		}
 

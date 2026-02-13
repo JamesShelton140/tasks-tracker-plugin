@@ -40,12 +40,14 @@ public class FilterDataClient
 		try (
 			InputStream stream = this.dataStoreReader
 				.readFilterConfigs(this.manifestClient.getManifest().filterMetadata);
-			InputStreamReader responseReader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+			InputStreamReader responseReader = new InputStreamReader(stream, StandardCharsets.UTF_8))
+		{
 			Type listType = TypeToken.getParameterized(ArrayList.class, FilterConfig.class).getType();
 
 			List<FilterConfig> filterConfigs = this.gson.fromJson(responseReader, listType);
 			HashMap<String, FilterConfig> filterConfigsByConfigKey = new HashMap<>();
-			for (FilterConfig filterConfig : filterConfigs) {
+			for (FilterConfig filterConfig : filterConfigs)
+			{
 				filterConfigsByConfigKey.put(filterConfig.getConfigKey(), filterConfig);
 			}
 			return filterConfigsByConfigKey;

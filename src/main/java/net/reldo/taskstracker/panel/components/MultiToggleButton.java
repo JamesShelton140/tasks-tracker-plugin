@@ -37,12 +37,15 @@ public class MultiToggleButton extends JButton
 
 	public void popupMenuEnabled(boolean enabled)
 	{
-		if (popupMenuEnabled != enabled) {
+		if (popupMenuEnabled != enabled)
+		{
 			popupMenuEnabled = enabled;
-			if (popupMenuEnabled) {
+			if (popupMenuEnabled)
+			{
 				this.setComponentPopupMenu(popupMenu);
 			}
-			else {
+			else
+			{
 				this.setComponentPopupMenu(null);
 			}
 		}
@@ -50,24 +53,28 @@ public class MultiToggleButton extends JButton
 
 	public void setIcon(Icon icon, int state)
 	{
-		if (state < 0 || state > stateCount || icon == null) {
+		if (state < 0 || state > stateCount || icon == null)
+		{
 			return;
 		}
 
 		icons[state] = icon;
 
-		if (state == this.state) {
+		if (state == this.state)
+		{
 			setIconState();
 		}
 	}
 
 	public boolean setIcons(Icon[] icons)
 	{
-		if (icons == null || icons.length == 0) {
+		if (icons == null || icons.length == 0)
+		{
 			return false;
 		}
 
-		for (int i = 0; i < icons.length; i++) {
+		for (int i = 0; i < icons.length; i++)
+		{
 			setIcon(icons[i], i);
 		}
 
@@ -76,25 +83,29 @@ public class MultiToggleButton extends JButton
 
 	public void setToolTip(String tooltip, int state)
 	{
-		if (state < 0 || state > 3 || tooltip == null) {
+		if (state < 0 || state > 3 || tooltip == null)
+		{
 			return;
 		}
 
 		tooltips[state] = tooltip;
 		addPopupMenuItem(tooltip, state);
 
-		if (state == this.state) {
+		if (state == this.state)
+		{
 			setTooltipState();
 		}
 	}
 
 	public boolean setToolTips(String[] tooltips)
 	{
-		if (tooltips == null || tooltips.length == 0) {
+		if (tooltips == null || tooltips.length == 0)
+		{
 			return false;
 		}
 
-		for (int i = 0; i < tooltips.length; i++) {
+		for (int i = 0; i < tooltips.length; i++)
+		{
 			setToolTip(tooltips[i], i);
 		}
 
@@ -131,7 +142,8 @@ public class MultiToggleButton extends JButton
 	public void setStateThenAction(int state)
 	{
 		setState(state);
-		if (stateChangedAction != null) {
+		if (stateChangedAction != null)
+		{
 			this.stateChangedAction.actionPerformed(new ActionEvent(this, 0, ""));
 		}
 	}
@@ -140,7 +152,8 @@ public class MultiToggleButton extends JButton
 	{
 		JMenuItem menuItem = new JMenuItem(text);
 		menuItem.addActionListener(e -> {
-			if (isEnabled()) {
+			if (isEnabled())
+			{
 				setStateThenAction(state);
 			}
 		});

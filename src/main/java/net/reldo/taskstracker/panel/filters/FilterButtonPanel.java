@@ -67,7 +67,8 @@ public abstract class FilterButtonPanel extends FilterPanel
 				ColorScheme.MEDIUM_GRAY_COLOR.darker(), ColorScheme.MEDIUM_GRAY_COLOR));
 		button.setFocusable(false);
 
-		if (image != null) {
+		if (image != null)
+		{
 			ImageIcon selectedIcon = new ImageIcon(image);
 			ImageIcon deselectedIcon = new ImageIcon(ImageUtil.alphaOffset(image, -180));
 
@@ -75,7 +76,8 @@ public abstract class FilterButtonPanel extends FilterPanel
 			button.setSelectedIcon(selectedIcon);
 			button.setPreferredSize(new Dimension(image.getWidth(), image.getHeight() + 10));
 		}
-		else {
+		else
+		{
 			button.setPreferredSize(new Dimension(button.getPreferredSize().width, 50));
 		}
 		button.setToolTipText(tooltip.substring(0, 1).toUpperCase() + tooltip.substring(1).toLowerCase());
@@ -167,7 +169,7 @@ public abstract class FilterButtonPanel extends FilterPanel
 	{
 		String filterText = buttons.entrySet().stream().filter(e -> e.getValue().isSelected())
 			.map(e -> "f-" + e.getKey() + "-f") // prefix included to cover cases where one key name is contained in
-												// another (e.g. "Master" -> "Grandmaster")
+			// another (e.g. "Master" -> "Grandmaster")
 			.collect(Collectors.joining(","));
 
 		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, configKey, filterText);
@@ -178,7 +180,8 @@ public abstract class FilterButtonPanel extends FilterPanel
 		String configValue = plugin.getConfigManager().getConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME,
 			configKey);
 		boolean isEmptyFilterSelection = configValue == null || configValue.isEmpty() || configValue.equals("-1");
-		if (isEmptyFilterSelection) {
+		if (isEmptyFilterSelection)
+		{
 			return true;
 		}
 
@@ -198,7 +201,8 @@ public abstract class FilterButtonPanel extends FilterPanel
 
 	public void redraw()
 	{
-		if (SwingUtilities.isEventDispatchThread()) {
+		if (SwingUtilities.isEventDispatchThread())
+		{
 			buttons.clear();
 			removeAll();
 
@@ -216,7 +220,8 @@ public abstract class FilterButtonPanel extends FilterPanel
 			validate();
 			repaint();
 		}
-		else {
+		else
+		{
 			log.error("Filter button panel redraw failed - not event dispatch thread.");
 		}
 	}

@@ -24,7 +24,7 @@ public class DynamicDropdownFilterPanel extends FilterPanel
 	private JComboBox<ComboItem> dropdown;
 
 	public DynamicDropdownFilterPanel(TasksTrackerPlugin plugin, FilterConfig filterConfig, TaskType taskType,
-		ComboItem[] items)
+									  ComboItem[] items)
 	{
 		this.configManager = plugin.getConfigManager();
 		this.plugin = plugin;
@@ -73,7 +73,8 @@ public class DynamicDropdownFilterPanel extends FilterPanel
 
 	public void redraw()
 	{
-		if (SwingUtilities.isEventDispatchThread()) {
+		if (SwingUtilities.isEventDispatchThread())
+		{
 			removeAll();
 
 			dropdown = makeDropdownPanel();
@@ -86,7 +87,8 @@ public class DynamicDropdownFilterPanel extends FilterPanel
 			validate();
 			repaint();
 		}
-		else {
+		else
+		{
 			log.error("Dropdown filter panel redraw failed - not event dispatch thread.");
 		}
 	}

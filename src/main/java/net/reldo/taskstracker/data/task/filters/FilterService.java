@@ -20,16 +20,20 @@ public class FilterService
 	public FilterConfig getGlobalFilterByKey(String filterKey)
 	{
 		// Instantiate filterConfigs if not already
-		if (filterConfigs == null || filterConfigs.isEmpty()) {
-			try {
+		if (filterConfigs == null || filterConfigs.isEmpty())
+		{
+			try
+			{
 				filterConfigs = filterDataClient.getFilterConfigs();
 				return filterConfigs.get(filterKey);
 			}
-			catch (Exception ex) {
+			catch (Exception ex)
+			{
 				log.error("Unable to get filter configs", ex);
 			}
 		}
-		else {
+		else
+		{
 			return filterConfigs.get(filterKey);
 		}
 
