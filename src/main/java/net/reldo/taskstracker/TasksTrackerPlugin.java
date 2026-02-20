@@ -270,6 +270,18 @@ public class TasksTrackerPlugin extends Plugin
 		{
 			pluginPanel.taskListPanel.setBatchSize(config.taskPanelBatchSize());
 		}
+
+		if (configChanged.getKey().equals("showOverlay"))
+		{
+			if (config.showOverlay())
+			{
+				overlayManager.add(overlay);
+			}
+			else
+			{
+				overlayManager.remove(overlay);
+			}
+		}
 	}
 
 	@Subscribe
@@ -285,7 +297,10 @@ public class TasksTrackerPlugin extends Plugin
 		if (newGameState == GameState.LOGGING_IN)
 		{
 			forceUpdateVarpsFlag = true;
-			overlayManager.add(overlay);
+			if (config.showOverlay())
+			{
+				overlayManager.add(overlay);
+			}
 		}
 		// Changed game mode
 		if (isLoggedInState(newGameState) && currentProfileType != null && currentProfileType != newProfileType)
@@ -673,7 +688,7 @@ public class TasksTrackerPlugin extends Plugin
 
 	public TaskFromStruct getPriorityTask()
 	{
-		return null;
-//		return pluginPanel.getPriorityTask();
+//		return null;
+		return pluginPanel.getPriorityTask();
 	}
 }
