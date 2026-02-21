@@ -688,7 +688,6 @@ public class TasksTrackerPlugin extends Plugin
 
 	public TaskFromStruct getPriorityTask()
 	{
-//		return null;
 		return pluginPanel.getPriorityTask();
 	}
 }
