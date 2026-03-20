@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -47,6 +48,7 @@ import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.ui.components.MouseDragEventForwarder;
 import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -69,15 +71,17 @@ public class TaskPanel extends JPanel
 	private final JToggleButton toggleIgnore = new JToggleButton();
 
 	protected final FilterMatcher filterMatcher;
+	private final JComponent listPanel;
 
 	protected TasksTrackerPlugin plugin;
 
-	public TaskPanel(TasksTrackerPlugin plugin, TaskFromStruct task, FilterMatcher filterMatcher)
+	public TaskPanel(TasksTrackerPlugin plugin, TaskFromStruct task, FilterMatcher filterMatcher, JComponent listPanel)
 	{
 		super(new BorderLayout());
 		this.plugin = plugin;
 		this.task = task;
 		this.filterMatcher = filterMatcher;
+		this.listPanel = listPanel;
 		createPanel();
 		setComponentPopupMenu(getPopupMenu());
 		ToolTipManager.sharedInstance().registerComponent(this);
@@ -226,6 +230,13 @@ public class TaskPanel extends JPanel
 		container.add(tierIcon, BorderLayout.WEST);
 		container.add(body, BorderLayout.CENTER);
 		container.add(buttons, BorderLayout.EAST);
+
+		// forward mouse drag events to parent panel for drag and drop reordering
+		MouseDragEventForwarder mouseDragEventForwarder = new MouseDragEventForwarder(listPanel);
+		container.addMouseListener(mouseDragEventForwarder);
+		container.addMouseMotionListener(mouseDragEventForwarder);
+		highlightContainer.addMouseListener(mouseDragEventForwarder);
+		highlightContainer.addMouseMotionListener(mouseDragEventForwarder);
 
 		BufferedImage tierSprite = task.getTaskType().getTierSprites().get(task.getTier());
 		if (tierSprite != null)

@@ -31,6 +31,7 @@ import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.components.SectionHeaderPanel;
 import net.runelite.api.Skill;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.ui.components.DragAndDropReorderPane;
 
 @Slf4j
 public class TaskListPanel extends JScrollPane
@@ -351,7 +352,7 @@ public class TaskListPanel extends JScrollPane
 		return ids;
 	}
 
-	private class TaskListListPanel extends FixedWidthPanel
+	private class TaskListListPanel extends DragAndDropReorderPane
 	{
 		private final TasksTrackerPlugin plugin;
 
@@ -359,7 +360,7 @@ public class TaskListPanel extends JScrollPane
 		{
 			this.plugin = plugin;
 
-			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+//			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 			setBorder(new EmptyBorder(0, 10, 10, 10));
 			setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -404,7 +405,7 @@ public class TaskListPanel extends JScrollPane
 				processInBatches(tasks.size(), indexPosition ->
 				{
 					TaskFromStruct task = tasks.get(indexPosition);
-					TaskPanel taskPanel = new TaskPanel(plugin, task, plugin.getFilterMatcher());
+					TaskPanel taskPanel = new TaskPanel(plugin, task, plugin.getFilterMatcher(), this);
 					add(taskPanel);
 					newTaskPanels.add(taskPanel);
 					taskPanelsByStructId.put(task.getStructId(), taskPanel);
