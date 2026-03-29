@@ -631,10 +631,6 @@ public class LoggedInPanel extends JPanel
 		// Route management menu items disabled while route editor in development
 		JMenuItem editorItem = new JMenuItem("Route Editor (Coming soon)");
 		editorItem.setEnabled(false);
-  		importItem.setEnabled(false);
-  		exportItem.setEnabled(false);
-  		createItem.setEnabled(false);
-  		deleteItem.setEnabled(false);
 
 		menu.add(importItem);
 		menu.add(exportItem);
