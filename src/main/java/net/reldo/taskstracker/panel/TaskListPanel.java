@@ -352,15 +352,17 @@ public class TaskListPanel extends JScrollPane
 		return ids;
 	}
 
-	private class TaskListListPanel extends DragAndDropReorderPane
+	private class TaskListListPanel extends FixedWidthPanel
 	{
 		private final TasksTrackerPlugin plugin;
+		private final DragAndDropReorderPane dragAndDropPane;
 
 		public TaskListListPanel(TasksTrackerPlugin plugin)
 		{
 			this.plugin = plugin;
+			this.dragAndDropPane = new DragAndDropReorderPane();
 
-//			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 			setBorder(new EmptyBorder(0, 10, 10, 10));
 			setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -371,11 +373,14 @@ public class TaskListPanel extends JScrollPane
 			emptyTasks.setVerticalAlignment(JLabel.CENTER);
 			add(emptyTasks);
 			emptyTasks.setVisible(false);
+
+			add(dragAndDropPane);
 		}
 
 		public void prepEmptyTaskListPanel()
 		{
-			SwingUtilities.invokeLater(this::removeAll);
+			SwingUtilities.invokeLater(dragAndDropPane::removeAll);
+//			SwingUtilities.invokeLater(this::removeAll);
 		}
 
 		public void drawNewTaskType()
@@ -388,7 +393,7 @@ public class TaskListPanel extends JScrollPane
 				priorityTaskPanel = null;
 				sectionHeaderPanels.clear();
 
-				add(emptyTasks);
+//				add(emptyTasks);
 
 				List<TaskFromStruct> tasks = taskService.getTasks();
 				if (tasks == null || tasks.isEmpty())
@@ -405,8 +410,8 @@ public class TaskListPanel extends JScrollPane
 				processInBatches(tasks.size(), indexPosition ->
 				{
 					TaskFromStruct task = tasks.get(indexPosition);
-					TaskPanel taskPanel = new TaskPanel(plugin, task, plugin.getFilterMatcher(), this);
-					add(taskPanel);
+					TaskPanel taskPanel = new TaskPanel(plugin, task, plugin.getFilterMatcher(), dragAndDropPane);
+					dragAndDropPane.add(taskPanel);
 					newTaskPanels.add(taskPanel);
 					taskPanelsByStructId.put(task.getStructId(), taskPanel);
 					if (indexPosition == (batchSize - 1))
@@ -455,7 +460,7 @@ public class TaskListPanel extends JScrollPane
 			Integer pinnedTaskStructId = null;
 			CustomRoute activeRoute = null;
 
-			int listSize = this.getComponentCount();
+			int listSize = dragAndDropPane.getComponentCount();
 			Map<Integer, JComponent> listPanelsToDraw = new HashMap<>(listSize);
 
 			boolean routeModeActive = plugin.isRouteMode();
@@ -499,7 +504,7 @@ public class TaskListPanel extends JScrollPane
 					{
 						header = new SectionHeaderPanel(sectionKey, section.getDescription());
 						sectionHeaderPanels.get(activeRoute.getName()).put(sectionKey, header);
-						add(header);
+						dragAndDropPane.add(header);
 					}
 					header.setCollapseCallback(collapsed -> {
 						SwingUtilities.invokeLater(() -> refreshMultipleStructIds(section.getTaskIds())); // @todo test if this needs to be updated when the route list changes
@@ -511,7 +516,7 @@ public class TaskListPanel extends JScrollPane
 					sectionStartIndex += section.getItems().size() + 1;
 				}
 
-				listSize = this.getComponentCount();
+				listSize = dragAndDropPane.getComponentCount();
 
 			}
 
@@ -547,7 +552,7 @@ public class TaskListPanel extends JScrollPane
 			{
 				if (listPanelsToDraw.containsKey(zIndex))
 				{
-					setComponentZOrder(listPanelsToDraw.get(zIndex), zIndex);
+					dragAndDropPane.setComponentZOrder(listPanelsToDraw.get(zIndex), zIndex);
 				}
 			}
 		}

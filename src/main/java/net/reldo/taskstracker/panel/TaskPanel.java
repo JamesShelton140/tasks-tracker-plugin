@@ -7,7 +7,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -34,6 +33,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.HtmlUtil;
 import net.reldo.taskstracker.TasksTrackerPlugin;
@@ -58,6 +59,11 @@ import net.runelite.client.util.SwingUtil;
 @Slf4j
 public class TaskPanel extends JPanel
 {
+	private static final String PIN_STATE = "Pin task";
+	private static final String UNPIN_STATE = "Unpin";
+	private static final String ADD_STATE = "Add to canvas";
+	private static final String REMOVE_STATE = "Remove from canvas";
+
 	public final TaskFromStruct task;
 
 	private final JLabel tierIcon = new JLabel();
@@ -69,6 +75,7 @@ public class TaskPanel extends JPanel
 	private final JPanel buttons = new JPanel();
 	private final JToggleButton toggleTrack = new JToggleButton();
 	private final JToggleButton toggleIgnore = new JToggleButton();
+	private final JPopupMenu popupMenu;
 
 	protected final FilterMatcher filterMatcher;
 	private final JComponent listPanel;
@@ -82,8 +89,8 @@ public class TaskPanel extends JPanel
 		this.task = task;
 		this.filterMatcher = filterMatcher;
 		this.listPanel = listPanel;
+		this.popupMenu = createTaskPopupMenu();
 		createPanel();
-		setComponentPopupMenu(getPopupMenu());
 		ToolTipManager.sharedInstance().registerComponent(this);
 
 		refresh();
@@ -150,7 +157,7 @@ public class TaskPanel extends JPanel
 			return Colors.COMPLETED_BACKGROUND_COLOR;
 		}
 
-		if (task.getTaskDefinition().getSkills() == null || task.getTaskDefinition().getSkills().size() == 0)
+		if (task.getTaskDefinition().getSkills() == null || task.getTaskDefinition().getSkills().isEmpty())
 		{
 			return ColorScheme.DARKER_GRAY_COLOR;
 		}
@@ -233,10 +240,8 @@ public class TaskPanel extends JPanel
 
 		// forward mouse drag events to parent panel for drag and drop reordering
 		MouseDragEventForwarder mouseDragEventForwarder = new MouseDragEventForwarder(listPanel);
-		container.addMouseListener(mouseDragEventForwarder);
-		container.addMouseMotionListener(mouseDragEventForwarder);
-		highlightContainer.addMouseListener(mouseDragEventForwarder);
-		highlightContainer.addMouseMotionListener(mouseDragEventForwarder);
+		addMouseListener(mouseDragEventForwarder);
+		addMouseMotionListener(mouseDragEventForwarder);
 
 		BufferedImage tierSprite = task.getTaskType().getTierSprites().get(task.getTier());
 		if (tierSprite != null)
@@ -253,49 +258,60 @@ public class TaskPanel extends JPanel
 		highlightContainer.add(container, BorderLayout.NORTH);
 		add(highlightContainer, BorderLayout.NORTH);
 
-		addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseReleased(MouseEvent e)
-			{
-				if (e.isPopupTrigger())
-				{
-					JPopupMenu menu = createTaskPopupMenu();
-					menu.show(e.getComponent(), e.getX(), e.getY());
-				}
-			}
-		});
+		setComponentPopupMenu(popupMenu);
 	}
 
 	public JPopupMenu createTaskPopupMenu()
 	{
 		JPopupMenu popupMenu = new JPopupMenu();
-		boolean isRouteMode = plugin.isRouteMode();
-		if (!isRouteMode)
-		{
-			if (plugin.getConfig().pinnedTaskId().equals(task.getStructId()))
-			{
-				JMenuItem unpinTaskItem = new JMenuItem("Unpin");
-				unpinTaskItem.addActionListener(e -> unpinTaskPanel());
-				popupMenu.add(unpinTaskItem);
 
-				JMenuItem addOverlay = new JMenuItem(plugin.getConfig().showOverlay() ? "Remove from canvas" : "Add to canvas");
-				addOverlay.addActionListener(e -> plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "showOverlay", !plugin.getConfig().showOverlay()));
-				popupMenu.add(addOverlay);
-			}
-			else
-			{
-				JMenuItem pinTaskItem = new JMenuItem("Pin task");
-				pinTaskItem.addActionListener(e -> pinTaskPanel());
-				popupMenu.add(pinTaskItem);
-			}
-		}
+		JMenuItem overlayItem = new JMenuItem(plugin.getConfig().showOverlay() ? REMOVE_STATE : ADD_STATE);
+		overlayItem.addActionListener(e -> plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "showOverlay", !plugin.getConfig().showOverlay()));
+		popupMenu.add(overlayItem);
+
+		JMenuItem pinTaskItem = new JMenuItem(PIN_STATE);
+		pinTaskItem.addActionListener(e -> togglePinTaskPanel());
+		popupMenu.add(pinTaskItem);
+
 		JMenuItem editNoteItem = new JMenuItem("Edit Note");
 		editNoteItem.addActionListener(e -> editTaskNote());
 		popupMenu.add(editNoteItem);
 		JMenuItem openWikiItem = new JMenuItem("Wiki");
 		openWikiItem.addActionListener(e -> openRuneScapeWiki());
 		popupMenu.add(openWikiItem);
+
+		popupMenu.addPopupMenuListener(new PopupMenuListener()
+		{
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent)
+			{
+				if (!plugin.isRouteMode())
+				{
+					boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getStructId());
+					pinTaskItem.setText(isPinnedTask ? UNPIN_STATE : PIN_STATE);
+					pinTaskItem.setVisible(true);
+
+					overlayItem.setText(plugin.getConfig().showOverlay() ? REMOVE_STATE : ADD_STATE);
+					overlayItem.setVisible(isPinnedTask);
+				}
+				else
+				{
+					pinTaskItem.setVisible(false);
+					overlayItem.setVisible(false);
+				}
+			}
+
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent)
+			{
+			}
+
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent popupMenuEvent)
+			{
+			}
+		});
+
 		return popupMenu;
 	}
 
@@ -333,6 +349,20 @@ public class TaskPanel extends JPanel
 		else
 		{
 			log.warn("Desktop browsing is not supported on this system.");
+		}
+	}
+
+	private void togglePinTaskPanel()
+	{
+		boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getStructId());
+
+		if (isPinnedTask)
+		{
+			unpinTaskPanel();
+		}
+		else
+		{
+			pinTaskPanel();
 		}
 	}
 
