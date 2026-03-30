@@ -43,10 +43,12 @@ public class RouteSection
 		}
 		if (taskIds != null)
 		{
-			return taskIds.stream()
+			setItems(taskIds.stream()
 				.filter(id -> id != null)
 				.map(id -> RouteItem.forTask(id))
-				.collect(Collectors.toList());
+				.collect(Collectors.toList()));
+
+			return items;
 		}
 		return new ArrayList<>();
 	}
@@ -119,8 +121,7 @@ public class RouteSection
 		int insertPos = insertAfter ? position + 1 : position;
 		currentItems.add(insertPos, RouteItem.forCustom(customItem));
 
-		this.items = currentItems;
-		this.taskIds = null;
+		setItems(currentItems);
 
 		return customItem;
 	}
