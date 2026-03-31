@@ -416,6 +416,13 @@ public class TaskService
 	}
 
 	/** Returns the active route for a tab, or null if none. */
+	public CustomRoute getActiveRoute()
+	{
+		ConfigValues.TaskListTabs tab = configManager.getConfig(TasksTrackerConfig.class).taskListTab();
+		return getActiveRoute(tab);
+	}
+
+	/** Returns the active route for a tab, or null if none. */
 	public CustomRoute getActiveRoute(ConfigValues.TaskListTabs tab)
 	{
 		return tabActiveRoutes.get(tab);
