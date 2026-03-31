@@ -1,6 +1,7 @@
 package net.reldo.taskstracker.data.route;
 
 import com.google.gson.annotations.Expose;
+import java.util.Optional;
 import lombok.Data;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -156,4 +157,117 @@ public class CustomRoute
 		}
 		return false;
 	}
+
+	public boolean remove(Integer taskId)
+	{
+		return remove(RouteItem.forTask(taskId));
+	}
+
+	public boolean remove(RouteItem item)
+	{
+		if (sections == null)
+		{
+			return false;
+		}
+		for (RouteSection section : sections)
+		{
+			if (section.remove(item))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void add(RouteSection section)
+	{
+		sections.add(section);
+	}
+
+	public void add(int index, RouteSection section)
+	{
+		sections.add(index, section);
+	}
+
+	public boolean add(Integer taskId)
+	{
+		return add(RouteItem.forTask(taskId));
+	}
+
+	public boolean add(RouteItem item)
+	{
+		if (sections == null)
+		{
+			return false;
+		}
+
+		// Append to last section
+		sections.get(sections.size() - 1).add(item);
+		return true;
+	}
+
+	public boolean add(int index, Integer taskId)
+	{
+		return add(index, taskId, false);
+	}
+
+	public boolean add(int index, Integer taskId, boolean countSectionHeaders)
+	{
+		return add(index, RouteItem.forTask(taskId), countSectionHeaders);
+	}
+
+	public boolean add(int index, RouteItem item)
+	{
+		return add(index, item, false);
+	}
+
+	/** Enforces uniqueness of route items. */
+	public boolean add(int index, RouteItem item, boolean countSectionHeaders)
+	{
+		if (sections == null)
+		{
+			return false;
+		}
+
+		remove(item);
+
+		int sectionHeaderPad = countSectionHeaders ? 1 : 0;
+		int targetIndex = (index == 0) ? index : index - sectionHeaderPad;
+
+		for (RouteSection section : sections)
+		{
+			int itemsInSection = section.getItemCount();
+			if (targetIndex <= itemsInSection)
+			{
+				section.add(targetIndex, item);
+				return true;
+			}
+
+			targetIndex -= itemsInSection + sectionHeaderPad;
+		}
+
+		// Index after last section so append to it
+		sections.get(sections.size() - 1).add(item);
+
+		return true;
+	}
+
+	/**
+	 * Add item to the specified section.
+	 */
+	public boolean add(String sectionName, RouteItem item)
+	{
+		Optional<RouteSection> foundSection = sections.stream()
+			.filter(section -> section.getName().equals(sectionName))
+			.findFirst();
+
+		if (foundSection.isEmpty())
+		{
+			return false;
+		}
+
+		foundSection.get().add(item);
+		return true;
+	}
+
 }

@@ -89,6 +89,12 @@ public class RouteSection
 		return getTaskIds().size();
 	}
 
+	/** Returns the number of tasks (not including custom items) in this section. */
+	public int getItemCount()
+	{
+		return getItems().size();
+	}
+
 	/**
 	 * Inserts a new custom item before or after the specified task.
 	 *
@@ -136,5 +142,56 @@ public class RouteSection
 			!item.isTask()
 			&& item.getCustomItem() != null
 			&& customItemId.equals(item.getCustomItem().getId()));
+	}
+
+	public boolean remove(Integer taskId)
+	{
+		if (getItems() == null)
+		{
+			return false;
+		}
+		return getItems().removeIf(item -> item.isTask() && item.getTaskId().equals(taskId));
+	}
+
+	public boolean remove(String customId)
+	{
+		if (getItems() == null)
+		{
+			return false;
+		}
+		return getItems().removeIf(item ->
+			!item.isTask() &&
+			item.getCustomItem() != null &&
+			item.getCustomItem().getId().equals(customId));
+	}
+
+	public boolean remove(RouteItem item)
+	{
+		if (getItems() == null)
+		{
+			return false;
+		}
+
+		return getItems().removeIf(anItem -> anItem.equals(item));
+	}
+
+	public void add(int index, Integer taskId)
+	{
+		add(index, RouteItem.forTask(taskId));
+	}
+
+	public void add(int index, RouteItem item)
+	{
+		getItems().add(index, item);
+	}
+
+	public void add(Integer taskId)
+	{
+		getItems().add(RouteItem.forTask(taskId));
+	}
+
+	public void add(RouteItem item)
+	{
+		getItems().add(item);
 	}
 }
