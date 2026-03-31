@@ -6,14 +6,17 @@ import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.ui.components.MouseDragEventForwarder;
 
-public class SectionHeaderPanel extends JPanel
+@Slf4j
+public class SectionHeaderPanel extends DraggablePanel
 {
 	private static final Color BACKGROUND_COLOR = new Color(60, 63, 65);
 	private static final Color HOVER_COLOR = new Color(70, 73, 75);
@@ -37,7 +40,7 @@ public class SectionHeaderPanel extends JPanel
 	@Setter
 	private Consumer<Boolean> collapseCallback;
 
-	public SectionHeaderPanel(String sectionName, String description)
+	public SectionHeaderPanel(String sectionName, String description, JComponent listPanel)
 	{
 		this.sectionName = sectionName;
 		this.description = description;
@@ -60,6 +63,11 @@ public class SectionHeaderPanel extends JPanel
 
 		add(titleLabel, BorderLayout.CENTER);
 		add(progressLabel, BorderLayout.EAST);
+
+		// forward mouse drag events to parent panel for drag and drop reordering
+		MouseDragEventForwarder mouseDragEventForwarder = new MouseDragEventForwarder(listPanel);
+		addMouseListener(mouseDragEventForwarder);
+		addMouseMotionListener(mouseDragEventForwarder);
 
 		// Click to toggle collapse
 		addMouseListener(new MouseAdapter()
@@ -132,5 +140,12 @@ public class SectionHeaderPanel extends JPanel
 	{
 		this.collapsed = collapsed;
 		updateTitleText();
+	}
+
+	@Override
+	public void dragFinished(int endingPosition)
+	{
+//		Move section in parent route
+		log.info("SectionHeaderPanel dragFinished position: {}", endingPosition);
 	}
 }

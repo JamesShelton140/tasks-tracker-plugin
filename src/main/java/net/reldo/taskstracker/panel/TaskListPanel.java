@@ -27,6 +27,7 @@ import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
+import net.reldo.taskstracker.panel.components.DraggablePanel;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.components.SectionHeaderPanel;
 import net.runelite.api.Skill;
@@ -374,6 +375,11 @@ public class TaskListPanel extends JScrollPane
 			add(emptyTasks);
 			emptyTasks.setVisible(false);
 
+			dragAndDropPane.addDragListener(component ->
+			{
+				DraggablePanel c = (DraggablePanel) component;
+				c.dragFinished(dragAndDropPane.getPosition(component));
+			});
 			add(dragAndDropPane);
 		}
 
@@ -502,7 +508,7 @@ public class TaskListPanel extends JScrollPane
 					SectionHeaderPanel header = routeHeaders.get(sectionKey);
 					if (header == null)
 					{
-						header = new SectionHeaderPanel(sectionKey, section.getDescription());
+						header = new SectionHeaderPanel(sectionKey, section.getDescription(), dragAndDropPane);
 						sectionHeaderPanels.get(activeRoute.getName()).put(sectionKey, header);
 						dragAndDropPane.add(header);
 					}

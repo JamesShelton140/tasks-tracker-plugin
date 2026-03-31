@@ -43,13 +43,14 @@ import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.filters.FilterMatcher;
+import net.reldo.taskstracker.panel.components.DraggablePanel;
+import net.reldo.taskstracker.panel.components.ConditionalMouseDragEventForwarder;
 import net.runelite.api.Constants;
 import net.runelite.api.Skill;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
-import net.runelite.client.ui.components.MouseDragEventForwarder;
 import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -57,7 +58,7 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
-public class TaskPanel extends JPanel
+public class TaskPanel extends DraggablePanel
 {
 	private static final String PIN_STATE = "Pin task";
 	private static final String UNPIN_STATE = "Unpin";
@@ -84,7 +85,7 @@ public class TaskPanel extends JPanel
 
 	public TaskPanel(TasksTrackerPlugin plugin, TaskFromStruct task, FilterMatcher filterMatcher, JComponent listPanel)
 	{
-		super(new BorderLayout());
+		setLayout(new BorderLayout());
 		this.plugin = plugin;
 		this.task = task;
 		this.filterMatcher = filterMatcher;
@@ -239,7 +240,7 @@ public class TaskPanel extends JPanel
 		container.add(buttons, BorderLayout.EAST);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
-		MouseDragEventForwarder mouseDragEventForwarder = new MouseDragEventForwarder(listPanel);
+		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.isRouteMode());
 		addMouseListener(mouseDragEventForwarder);
 		addMouseMotionListener(mouseDragEventForwarder);
 
@@ -649,5 +650,12 @@ public class TaskPanel extends JPanel
 			.right(skillString)
 			.rightColor(color)
 			.build();
+	}
+
+	@Override
+	public void dragFinished(int endingPosition)
+	{
+//		Set new position in active route
+		log.info("TaskPanel dragFinished position: {}", endingPosition);
 	}
 }
