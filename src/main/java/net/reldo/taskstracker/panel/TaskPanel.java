@@ -668,5 +668,9 @@ public class TaskPanel extends DraggablePanel
 		{
 			plugin.redrawTaskList();
 		}
+		else
+		{
+			plugin.refreshAllTasks(); // @todo this is heavier than necessary, we only need to refresh the priority task
+		}
 	}
 }

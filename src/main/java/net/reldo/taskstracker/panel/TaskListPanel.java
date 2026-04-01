@@ -308,8 +308,8 @@ public class TaskListPanel extends JScrollPane
 
 		Optional<TaskPanel> optionalTaskPanel = taskPanels.stream().filter(Component::isVisible).
 			min((panel1, panel2) ->
-				Integer.compare(getCurrentTaskListListPanel().getComponentZOrder(panel1),
-					getCurrentTaskListListPanel().getComponentZOrder(panel2)));
+				Integer.compare(getCurrentTaskListListPanel().getListPanelPosition(panel1),
+					getCurrentTaskListListPanel().getListPanelPosition(panel2)));
 		priorityTaskPanel = optionalTaskPanel.orElse(null);
 	}
 
@@ -386,7 +386,6 @@ public class TaskListPanel extends JScrollPane
 		public void prepEmptyTaskListPanel()
 		{
 			SwingUtilities.invokeLater(dragAndDropPane::removeAll);
-//			SwingUtilities.invokeLater(this::removeAll);
 		}
 
 		public void drawNewTaskType()
@@ -601,6 +600,11 @@ public class TaskListPanel extends JScrollPane
 				plugin.enableTaskTypeDropdown();
 				SwingUtilities.invokeLater(this::redraw);
 			}
+		}
+
+		public int getListPanelPosition(Component component)
+		{
+			return dragAndDropPane.getComponentZOrder(component);
 		}
 	}
 }
