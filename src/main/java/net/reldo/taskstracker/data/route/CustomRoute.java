@@ -1,11 +1,13 @@
 package net.reldo.taskstracker.data.route;
 
 import com.google.gson.annotations.Expose;
+import java.util.ArrayList;
 import java.util.Optional;
 import lombok.Data;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A user-defined or imported route for completing tasks in a specific order.
@@ -15,6 +17,7 @@ import lombok.NonNull;
  * Routes are stored per-taskType and can be selected independently per tab.
  */
 @Data
+@Slf4j
 public class CustomRoute
 {
 	/** Unique name identifying this route (used as lookup key). */
@@ -158,6 +161,24 @@ public class CustomRoute
 		return false;
 	}
 
+	public RouteSection get(String sectionName)
+	{
+		return sections.stream()
+			.filter(listSection -> listSection.getName().equals(sectionName))
+			.findFirst()
+			.orElse(null);
+	}
+
+	public boolean remove(RouteSection section)
+	{
+		if (sections == null)
+		{
+			return false;
+		}
+
+		return sections.remove(section);
+	}
+
 	public boolean remove(Integer taskId)
 	{
 		return remove(RouteItem.forTask(taskId));
@@ -179,50 +200,59 @@ public class CustomRoute
 		return false;
 	}
 
-	public void add(RouteSection section)
+	public void addSectionAfter(String beforeSectionName, String afterSectionName)
 	{
-		sections.add(section);
+		int index = sections.stream().filter(section -> section.getName().equals(beforeSectionName))
+			.findFirst()
+			.map( section -> sections.indexOf(section) + 1)
+			.orElse(0);
+
+		addSection(index, afterSectionName);
 	}
 
-	public void add(int index, RouteSection section)
+	public void addSection(int index, String sectionName)
 	{
-		sections.add(index, section);
+		RouteSection section = get(sectionName);
+		if (section == null)
+		{
+			section = new RouteSection(sectionName);
+		}
+
+		addSection(index, section);
 	}
 
-	public boolean add(Integer taskId)
-	{
-		return add(RouteItem.forTask(taskId));
-	}
-
-	public boolean add(RouteItem item)
+	public void addSection(RouteSection section)
 	{
 		if (sections == null)
 		{
-			return false;
+			sections = new ArrayList<>();
 		}
 
-		// Append to last section
-		sections.get(sections.size() - 1).add(item);
-		return true;
+		addSection(sections.size(), section);
 	}
 
-	public boolean add(int index, Integer taskId)
+	public void addSection(int index, RouteSection section)
 	{
-		return add(index, taskId, false);
+		if (sections == null)
+		{
+			sections = new ArrayList<>();
+		}
+
+		int sectionWasRemoved = sections.subList(0, index).remove(section) ? 1 : 0;
+		if (sectionWasRemoved == 0)
+		{
+			sections.remove(section);
+		}
+
+		sections.add(index - sectionWasRemoved, section);
 	}
 
-	public boolean add(int index, Integer taskId, boolean countSectionHeaders)
+	public boolean addItem(Integer taskId)
 	{
-		return add(index, RouteItem.forTask(taskId), countSectionHeaders);
+		return addItem(RouteItem.forTask(taskId));
 	}
 
-	public boolean add(int index, RouteItem item)
-	{
-		return add(index, item, false);
-	}
-
-	/** Enforces uniqueness of route items. */
-	public boolean add(int index, RouteItem item, boolean countSectionHeaders)
+	public boolean addItem(RouteItem item)
 	{
 		if (sections == null)
 		{
@@ -230,6 +260,36 @@ public class CustomRoute
 		}
 
 		remove(item);
+
+		// Append to last section
+		sections.get(sections.size() - 1).add(item);
+		return true;
+	}
+
+	public boolean addItem(int index, Integer taskId)
+	{
+		return addItem(index, taskId, false);
+	}
+
+	public boolean addItem(int index, Integer taskId, boolean countSectionHeaders)
+	{
+		return addItem(index, RouteItem.forTask(taskId), countSectionHeaders);
+	}
+
+	public boolean addItem(int index, RouteItem item)
+	{
+		return addItem(index, item, false);
+	}
+
+	/** Enforces uniqueness of route items. */
+	public boolean addItem(int index, RouteItem item, boolean countSectionHeaders)
+	{
+		if (sections == null)
+		{
+			return false;
+		}
+
+		remove(item); // @todo consider potential removal in final index
 
 		int sectionHeaderPad = countSectionHeaders ? 1 : 0;
 		int targetIndex = (index == 0) ? index : index - sectionHeaderPad;

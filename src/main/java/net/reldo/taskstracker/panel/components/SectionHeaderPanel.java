@@ -8,6 +8,7 @@ import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.MouseDragEventForwarder;
 
 @Slf4j
-public class SectionHeaderPanel extends DraggablePanel
+public class SectionHeaderPanel extends JPanel
 {
 	private static final Color BACKGROUND_COLOR = new Color(60, 63, 65);
 	private static final Color HOVER_COLOR = new Color(70, 73, 75);
@@ -140,12 +141,5 @@ public class SectionHeaderPanel extends DraggablePanel
 	{
 		this.collapsed = collapsed;
 		updateTitleText();
-	}
-
-	@Override
-	public void dragFinished(int endingPosition)
-	{
-//		Move section in parent route
-		log.info("SectionHeaderPanel dragFinished position: {}", endingPosition);
 	}
 }

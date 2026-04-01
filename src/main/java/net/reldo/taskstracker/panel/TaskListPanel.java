@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
@@ -27,7 +28,6 @@ import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
-import net.reldo.taskstracker.panel.components.DraggablePanel;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.components.SectionHeaderPanel;
 import net.runelite.api.Skill;
@@ -375,11 +375,7 @@ public class TaskListPanel extends JScrollPane
 			add(emptyTasks);
 			emptyTasks.setVisible(false);
 
-			dragAndDropPane.addDragListener(component ->
-			{
-				DraggablePanel c = (DraggablePanel) component;
-				c.dragFinished(dragAndDropPane.getPosition(component));
-			});
+			dragAndDropPane.addDragListener(this::dragFinished);
 			add(dragAndDropPane);
 		}
 
@@ -605,6 +601,56 @@ public class TaskListPanel extends JScrollPane
 		public int getListPanelPosition(Component component)
 		{
 			return dragAndDropPane.getComponentZOrder(component);
+		}
+
+		/**
+		 * Process the new position of a dragged panel in route mode
+		 */
+		public void dragFinished(Component panel)
+		{
+			CustomRoute activeRoute = taskService.getActiveRoute();
+
+			if (panel.getClass().equals(TaskPanel.class))
+			{
+				int endingPosition = dragAndDropPane.getPosition(panel);
+				log.debug("TaskPanel dragged to position {}, updating route and re-indexing.", endingPosition);
+				TaskPanel taskPanel = (TaskPanel) panel;
+				activeRoute.addItem(endingPosition, taskPanel.task.getStructId(), true);
+
+				taskService.addRouteIndex(activeRoute);
+				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+
+				// if task was dragged to the top then the list needs to be redrawn otherwise just update the priority panel
+				if (endingPosition == 0)
+				{
+					plugin.redrawTaskList();
+				}
+				else
+				{
+					plugin.refreshAllTasks();
+				}
+			}
+
+			if (panel.getClass().equals(SectionHeaderPanel.class))
+			{
+				log.debug("SectionHeaderPanel dragged, updating route and re-indexing.");
+				SectionHeaderPanel sectionHeaderPanel = (SectionHeaderPanel) panel;
+				Collection<SectionHeaderPanel> headerPanels = sectionHeaderPanels.get(activeRoute.getName()).values();
+				SectionHeaderPanel precedingHeaderPanel = headerPanels.stream()
+					.filter(filterPanel -> dragAndDropPane.getPosition(filterPanel) < dragAndDropPane.getPosition(sectionHeaderPanel))
+					.max((panel1, panel2) ->
+						Integer.compare(dragAndDropPane.getPosition(panel1), dragAndDropPane.getPosition(panel2)))
+					.orElse(null);
+
+				String precedingSectionName = (precedingHeaderPanel == null) ? null : precedingHeaderPanel.getSectionName();
+
+				log.debug("SectionHeaderPanel add after {}.", precedingSectionName);
+				activeRoute.addSectionAfter(precedingSectionName, sectionHeaderPanel.getSectionName());
+
+				taskService.addRouteIndex(activeRoute);
+				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+				plugin.redrawTaskList();
+			}
 		}
 	}
 }

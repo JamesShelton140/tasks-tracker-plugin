@@ -44,7 +44,6 @@ import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.data.task.filters.FilterMatcher;
-import net.reldo.taskstracker.panel.components.DraggablePanel;
 import net.reldo.taskstracker.panel.components.ConditionalMouseDragEventForwarder;
 import net.runelite.api.Constants;
 import net.runelite.api.Skill;
@@ -59,7 +58,7 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
-public class TaskPanel extends DraggablePanel
+public class TaskPanel extends JPanel
 {
 	private static final String PIN_STATE = "Pin task";
 	private static final String UNPIN_STATE = "Unpin";
@@ -651,26 +650,5 @@ public class TaskPanel extends DraggablePanel
 			.right(skillString)
 			.rightColor(color)
 			.build();
-	}
-
-	@Override
-	public void dragFinished(int endingPosition)
-	{
-		log.debug("TaskPanel dragged to position {}, updating route and re-indexing.", endingPosition);
-		TaskService taskService = plugin.getTaskService();
-		CustomRoute activeRoute = taskService.getActiveRoute();
-		activeRoute.add(endingPosition, task.getStructId(), true);
-		taskService.addRouteIndex(activeRoute);
-		plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
-
-		// if task was dragged to the top then the list needs to be redrawn
-		if (endingPosition == 0)
-		{
-			plugin.redrawTaskList();
-		}
-		else
-		{
-			plugin.refreshAllTasks(); // @todo this is heavier than necessary, we only need to refresh the priority task
-		}
 	}
 }
