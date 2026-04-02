@@ -95,18 +95,6 @@ public interface TasksTrackerConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(
-		position = 99,
-		keyName = "saveSubFilterState", //@todo generalise this to all sub-filters
-		name = "Save Filter State",
-		description = "Configures whether the state of area filters should be saved and recalled when switching task type or restarting the plugin.",
-		hidden = true //todo This is hidden because it currently doesn't do anything
-	)
-	default boolean saveSubFilterState()
-	{
-		return true;
-	}
-
 
 	/*=================================================================================================================
 	-- Overlay Panel settings                                                                                        --
@@ -321,6 +309,19 @@ public interface TasksTrackerConfig extends Config
 	default ConfigValues.SortDirections sortDirection()
 	{
 		return ConfigValues.SortDirections.ASCENDING;
+	}
+
+	@ConfigItem(
+		position = 112,
+		keyName = "routeInEditMode",
+		name = "routeInEditMode",
+		description = "Contains the unique id of the route being edited.",
+		section = internalConfig//,
+//		hidden = true
+	)
+	default String routeInEditMode()
+	{
+		return "Route 1";
 	}
 
 	/*=================================================================================================================

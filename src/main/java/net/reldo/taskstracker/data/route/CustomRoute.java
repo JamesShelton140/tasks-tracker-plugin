@@ -179,9 +179,12 @@ public class CustomRoute
 		return sections.remove(section);
 	}
 
-	public boolean remove(Integer taskId)
+	public void remove(Integer taskId)
 	{
-		return remove(RouteItem.forTask(taskId));
+		getFlattenedItems().stream()
+			.filter(item -> item.isTask() && item.getTaskId().equals(taskId))
+			.findFirst()
+			.ifPresent(this::remove);
 	}
 
 	public boolean remove(RouteItem item)
@@ -289,21 +292,21 @@ public class CustomRoute
 			return false;
 		}
 
-		remove(item); // @todo consider potential removal in final index
+		remove(item);
 
 		int sectionHeaderPad = countSectionHeaders ? 1 : 0;
 		int targetIndex = (index == 0) ? index : index - sectionHeaderPad;
 
 		for (RouteSection section : sections)
 		{
-			int itemsInSection = section.getItemCount();
-			if (targetIndex <= itemsInSection)
+			int itemsToNextSection = section.getItemCount() + sectionHeaderPad;
+			if (targetIndex <= itemsToNextSection)
 			{
 				section.add(targetIndex, item);
 				return true;
 			}
 
-			targetIndex -= itemsInSection + sectionHeaderPad;
+			targetIndex -= itemsToNextSection;
 		}
 
 		// Index after last section so append to it
@@ -315,7 +318,7 @@ public class CustomRoute
 	/**
 	 * Add item to the specified section.
 	 */
-	public boolean add(String sectionName, RouteItem item)
+	public boolean addItem(String sectionName, RouteItem item)
 	{
 		Optional<RouteSection> foundSection = sections.stream()
 			.filter(section -> section.getName().equals(sectionName))
@@ -325,6 +328,7 @@ public class CustomRoute
 		{
 			return false;
 		}
+		remove(item);
 
 		foundSection.get().add(item);
 		return true;

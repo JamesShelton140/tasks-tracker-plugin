@@ -16,6 +16,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import javax.swing.BoxLayout;
@@ -41,6 +42,8 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
+import net.reldo.taskstracker.data.route.RouteItem;
+import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.data.task.filters.FilterMatcher;
@@ -281,8 +284,18 @@ public class TaskPanel extends JPanel
 		openWikiItem.addActionListener(e -> openRuneScapeWiki());
 		popupMenu.add(openWikiItem);
 
+		JMenuItem routeEditHeader = new JMenuItem("Edit route");
+		routeEditHeader.setEnabled(false);
+		popupMenu.add(routeEditHeader);
+
+		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
+		removeTaskFromRoute.addActionListener(e -> removeTaskFromRoute());
+		popupMenu.add(removeTaskFromRoute);
+
 		popupMenu.addPopupMenuListener(new PopupMenuListener()
 		{
+			final List<JMenuItem> sectionsMenuItems = new ArrayList<>();
+
 			@Override
 			public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent)
 			{
@@ -300,11 +313,41 @@ public class TaskPanel extends JPanel
 					pinTaskItem.setVisible(false);
 					overlayItem.setVisible(false);
 				}
+				if (plugin.isRouteEditMode())
+				{
+					routeEditHeader.setVisible(true);
+
+					if (!plugin.isRouteMode())
+					{
+						removeTaskFromRoute.setVisible(false);
+						CustomRoute route = getRouteInEditMode();
+						List<RouteSection> sections = (route != null) ? route.getSections() : new ArrayList<>();
+
+						for (RouteSection section : sections)
+						{
+							JMenuItem addTaskToRoute = new JMenuItem("Add to - " + section.getName());
+							addTaskToRoute.addActionListener(e -> addTaskToRoute(route, section));
+							sectionsMenuItems.add(addTaskToRoute);
+							popupMenu.add(addTaskToRoute);
+						}
+					}
+					else
+					{
+						removeTaskFromRoute.setVisible(true);
+					}
+				}
+				else
+				{
+					routeEditHeader.setVisible(false);
+					removeTaskFromRoute.setVisible(false);
+				}
 			}
 
 			@Override
 			public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent)
 			{
+				sectionsMenuItems.forEach(popupMenu::remove);
+				sectionsMenuItems.clear();
 			}
 
 			@Override
@@ -377,6 +420,44 @@ public class TaskPanel extends JPanel
 	{
 		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", 0);
 		SwingUtilities.invokeLater(plugin::redrawTaskList);
+	}
+
+	private CustomRoute getRouteInEditMode()
+	{
+		TaskService taskService = plugin.getTaskService();
+		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
+		return plugin.getTrackerGlobalConfigStore().loadRoutes(taskType).stream()
+			.filter(filterRoute -> filterRoute.getName().equals(plugin.getConfig().routeInEditMode()))
+			.findFirst()
+			.orElse(null);
+	}
+
+	private void addTaskToRoute(CustomRoute route, RouteSection section)
+	{
+		TaskService taskService = plugin.getTaskService();
+		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
+		if (route == null)
+		{
+			return;
+		}
+		route.addItem(section.getName(), RouteItem.forTask(task.getStructId()));
+		taskService.addRouteIndex(route);
+		plugin.getTrackerGlobalConfigStore().addRoute(taskType, route);
+	}
+
+	private void removeTaskFromRoute()
+	{
+		TaskService taskService = plugin.getTaskService();
+		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
+		CustomRoute route = taskService.getActiveRoute();
+		if (route == null)
+		{
+			return;
+		}
+		route.remove(task.getStructId());
+		taskService.addRouteIndex(route);
+		plugin.getTrackerGlobalConfigStore().addRoute(taskType, route);
+		SwingUtilities.invokeLater(() -> plugin.redraw());
 	}
 
 	public void refresh()

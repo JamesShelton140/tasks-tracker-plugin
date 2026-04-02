@@ -724,6 +724,14 @@ public class TasksTrackerPlugin extends Plugin
 		return "route".equalsIgnoreCase(config.sortCriteria());
 	}
 
+	/**
+	 * Returns true if the sort criteria config option is set to "Route".
+	 */
+	public boolean isRouteEditMode()
+	{
+		return !config.routeInEditMode().isEmpty();
+	}
+
 	public void enableTaskTypeDropdown()
 	{
 		pluginPanel.enableTaskTypeDropdown();

@@ -623,11 +623,11 @@ public class TaskListPanel extends JScrollPane
 				// if task was dragged to the top then the list needs to be redrawn otherwise just update the priority panel
 				if (endingPosition == 0)
 				{
-					plugin.redrawTaskList();
+					redraw();
 				}
 				else
 				{
-					plugin.refreshAllTasks();
+					refreshAllTasks();
 				}
 			}
 
@@ -649,7 +649,7 @@ public class TaskListPanel extends JScrollPane
 
 				taskService.addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
-				plugin.redrawTaskList();
+				redraw();
 			}
 		}
 	}
