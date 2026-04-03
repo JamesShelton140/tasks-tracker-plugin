@@ -280,7 +280,7 @@ public class TaskService
 			position = getTaskByStructId(taskStructId).getSortId();
 		}
 
-		return ascending ? position : tasks.size() - (position + 1);
+		return (ascending || activeRoute) ? position : tasks.size() - (position + 1);
 	}
 
 	public boolean isVarpInCurrentTaskType(int varpId)

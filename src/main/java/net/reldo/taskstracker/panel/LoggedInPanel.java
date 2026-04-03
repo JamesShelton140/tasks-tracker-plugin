@@ -13,7 +13,6 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
@@ -29,6 +28,7 @@ import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.jsondatastore.types.FilterConfig;
 import net.reldo.taskstracker.data.jsondatastore.types.FilterType;
 import net.reldo.taskstracker.data.route.CustomRoute;
+import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.reldo.taskstracker.data.route.RouteManager;
 import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskService;
@@ -37,6 +37,7 @@ import net.reldo.taskstracker.data.task.filters.RegexTextMatcher;
 import net.reldo.taskstracker.data.task.filters.TextMatcher;
 import net.reldo.taskstracker.data.task.filters.TextMatcherFactory;
 import net.reldo.taskstracker.panel.components.FilterLockTabMenuItem;
+import net.reldo.taskstracker.panel.components.RouteEditPanel;
 import net.reldo.taskstracker.panel.components.RouteSelector;
 import net.reldo.taskstracker.panel.components.SearchBox;
 import net.reldo.taskstracker.panel.components.TriToggleButton;
@@ -68,6 +69,9 @@ public class LoggedInPanel extends JPanel
 
 	// Route selector
 	private RouteSelector routeSelector;
+
+	// Route selector
+	private RouteEditPanel routeEditPanel;
 
 	// sub-filter panel
 	private SubFilterPanel subFilterPanel;
@@ -117,6 +121,7 @@ public class LoggedInPanel extends JPanel
 		subFilterPanel.redraw();
 		sortPanel.redraw();
 		updateCollapseButtonText();
+		routeEditPanel.redraw();
 
 		refreshRouteSelector();
 		taskListPanel.drawNewTaskType();
@@ -128,6 +133,7 @@ public class LoggedInPanel extends JPanel
 		subFilterPanel.redraw();
 		sortPanel.redraw();
 		updateCollapseButtonText();
+		routeEditPanel.redraw();
 
 		taskListPanel.redraw();
 	}
@@ -465,6 +471,12 @@ public class LoggedInPanel extends JPanel
 
 		routeSelector.addManageListener(e -> showRouteManagementMenu());
 
+		// Route edit panel (visible only when sort is "Route" and selected route is in edit mode)
+		routeEditPanel = new RouteEditPanel(plugin, taskService);
+		routeEditPanel.addAddSectionListener(e ->
+			RouteEditActions.addNewSectionAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
+		routeEditPanel.setAlignmentX(LEFT_ALIGNMENT);
+
 		northPanel.add(getTitleAndButtonPanel());
 		northPanel.add(Box.createVerticalStrut(10));
 		northPanel.add(taskTypeDropdown);
@@ -476,11 +488,14 @@ public class LoggedInPanel extends JPanel
 		northPanel.add(routeSelector);
 		northPanel.add(Box.createVerticalStrut(2));
 		northPanel.add(subFilterWrapper);
+		northPanel.add(Box.createVerticalStrut(2));
+		northPanel.add(routeEditPanel);
 
 		// Route selector and sub-filter visibility based on sort mode
 		boolean isRouteMode = plugin.isRouteMode();
 		routeSelector.setVisible(isRouteMode);
 		subFilterWrapper.setVisible(!isRouteMode);
+		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
 
 		return northPanel;
 	}
@@ -583,6 +598,7 @@ public class LoggedInPanel extends JPanel
 	{
 		boolean isRouteMode = sortPanel.isRouteMode();
 		routeSelector.setVisible(isRouteMode);
+		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
 		subFilterWrapper.setVisible(!isRouteMode);
 
 		if (isRouteMode)
@@ -651,41 +667,16 @@ public class LoggedInPanel extends JPanel
 
 			menu.addSeparator();
 			JMenuItem addSectionItem = new JMenuItem("Add New Section");
-			addSectionItem.addActionListener(e -> {
-
-				String name = JOptionPane.showInputDialog(
-					null,
-					"Enter section name:",
-					"Create Section",
-					JOptionPane.PLAIN_MESSAGE
-				);
-
-				if (name != null && !name.trim().isEmpty())
-				{
-					name = name.trim();
-					activeRoute.addSection(new RouteSection(name));
-					taskService.addRouteIndex(activeRoute);
-					plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
-					redrawTaskList();
-				}
-			});
+			addSectionItem.addActionListener(RouteEditActions.addNewSectionAction(plugin, activeRoute));
 			menu.add(addSectionItem);
 
 			menu.addSeparator();
 			for (RouteSection section : activeRoute.getSections())
 			{
 				JMenuItem removeSectionItem = new JMenuItem("Remove Section - " + section.getName());
-				removeSectionItem.addActionListener(e -> {
-					if (activeRoute.remove(section))
-					{
-						taskService.addRouteIndex(activeRoute);
-						plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
-						redrawTaskList();
-					}
-				});
+				removeSectionItem.addActionListener(RouteEditActions.removeSectionAction(plugin, activeRoute, section));
 				menu.add(removeSectionItem);
 			}
-
 		}
 
 		// Show below the manage button

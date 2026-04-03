@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -42,7 +44,7 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
-import net.reldo.taskstracker.data.route.RouteItem;
+import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
@@ -63,10 +65,15 @@ import net.runelite.client.util.SwingUtil;
 @Slf4j
 public class TaskPanel extends JPanel
 {
+	private static final Color ADD_HOVER_COLOR = Color.GREEN;
+	private static final Color DELETE_HOVER_COLOR = Color.RED;
+	private static final Color TEXT_COLOR = Color.WHITE;
+
 	private static final String PIN_STATE = "Pin task";
 	private static final String UNPIN_STATE = "Unpin";
 	private static final String ADD_STATE = "Add to canvas";
 	private static final String REMOVE_STATE = "Remove from canvas";
+	private static final String DELETE_ICON = "\uD83D\uDDD1";
 
 	public final TaskFromStruct task;
 
@@ -79,6 +86,8 @@ public class TaskPanel extends JPanel
 	private final JPanel buttons = new JPanel();
 	private final JToggleButton toggleTrack = new JToggleButton();
 	private final JToggleButton toggleIgnore = new JToggleButton();
+	private final JButton addButton = new JButton();
+	private final JButton deleteButton = new JButton();
 	private final JPopupMenu popupMenu;
 
 	protected final FilterMatcher filterMatcher;
@@ -234,8 +243,55 @@ public class TaskPanel extends JPanel
 		});
 		SwingUtil.removeButtonDecorations(toggleIgnore);
 
+		// Delete button
+		deleteButton.setText(DELETE_ICON);
+		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
+		deleteButton.addActionListener( e -> {
+			CustomRoute route = plugin.getTaskService().getActiveRoute();
+			RouteEditActions.removeTaskAction(plugin, route, task.getStructId()).actionPerformed(e);
+		});
+		SwingUtil.removeButtonDecorations(deleteButton);
+		deleteButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				deleteButton.setForeground(DELETE_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				deleteButton.setForeground(TEXT_COLOR);
+			}
+		});
+
+		// Add button
+		addButton.setText("+");
+		addButton.setBorder(new EmptyBorder(0, 0, 0, 0));
+		addButton.addActionListener(RouteEditActions.addTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()));
+		addButton.setFont(FontManager.getRunescapeSmallFont());
+		SwingUtil.removeButtonDecorations(addButton);
+		addButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				addButton.setForeground(ADD_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				addButton.setForeground(TEXT_COLOR);
+			}
+		});
+		addButton.setComponentPopupMenu(popupMenu);
+
 		buttons.add(toggleTrack);
 		buttons.add(toggleIgnore);
+		buttons.add(addButton);
+		buttons.add(deleteButton);
 
 		// Full
 		container.add(tierIcon, BorderLayout.WEST);
@@ -291,7 +347,10 @@ public class TaskPanel extends JPanel
 		popupMenu.add(routeEditHeader);
 
 		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
-		removeTaskFromRoute.addActionListener(e -> removeTaskFromRoute());
+		removeTaskFromRoute.addActionListener(e -> {
+			CustomRoute route = plugin.getTaskService().getActiveRoute();
+			RouteEditActions.removeTaskAction(plugin, route, task.getStructId()).actionPerformed(e);
+		});
 		popupMenu.add(removeTaskFromRoute);
 
 		popupMenu.addPopupMenuListener(new PopupMenuListener()
@@ -330,7 +389,7 @@ public class TaskPanel extends JPanel
 						for (RouteSection section : sections)
 						{
 							JMenuItem addTaskToRoute = new JMenuItem("Add to - " + section.getName());
-							addTaskToRoute.addActionListener(e -> addTaskToRoute(editModeRoute, section));
+							addTaskToRoute.addActionListener(RouteEditActions.addTaskToSectionAction(plugin, editModeRoute, section.getName(), task.getStructId()));
 							sectionsMenuItems.add(addTaskToRoute);
 							popupMenu.add(addTaskToRoute);
 						}
@@ -441,34 +500,6 @@ public class TaskPanel extends JPanel
 			.orElse(null);
 	}
 
-	private void addTaskToRoute(CustomRoute route, RouteSection section)
-	{
-		TaskService taskService = plugin.getTaskService();
-		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
-		if (route == null)
-		{
-			return;
-		}
-		route.addItem(section.getName(), RouteItem.forTask(task.getStructId()));
-		taskService.addRouteIndex(route);
-		plugin.getTrackerGlobalConfigStore().addRoute(taskType, route);
-	}
-
-	private void removeTaskFromRoute()
-	{
-		TaskService taskService = plugin.getTaskService();
-		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
-		CustomRoute route = taskService.getActiveRoute();
-		if (route == null)
-		{
-			return;
-		}
-		route.remove(task.getStructId());
-		taskService.addRouteIndex(route);
-		plugin.getTrackerGlobalConfigStore().addRoute(taskType, route);
-		SwingUtilities.invokeLater(() -> plugin.redraw());
-	}
-
 	public void refresh()
 	{
 		boolean isRouteMode = plugin.isRouteMode();
@@ -500,6 +531,13 @@ public class TaskPanel extends JPanel
 
 		toggleTrack.setSelected(task.isTracked());
 		toggleIgnore.setSelected(task.isIgnored());
+
+		// Change button visibility in edit mode
+		boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
+		toggleTrack.setVisible(!plugin.isRouteEditMode());
+		toggleIgnore.setVisible(!plugin.isRouteEditMode());
+		addButton.setVisible(plugin.isRouteEditMode() && !editingActiveRoute);
+		deleteButton.setVisible(plugin.isRouteEditMode() && editingActiveRoute);
 
 		setVisible(meetsFilterCriteria());
 

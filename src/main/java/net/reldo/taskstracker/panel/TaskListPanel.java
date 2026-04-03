@@ -132,6 +132,7 @@ public class TaskListPanel extends JScrollPane
 		}
 		refreshEmptyPanel();
 		updatePriorityTaskAfterRefresh();
+		refreshAllSections();
 	}
 
 	public void refreshMultipleStructIds(Collection<Integer> structIds)
@@ -243,6 +244,27 @@ public class TaskListPanel extends JScrollPane
 		if (header != null && header.isCollapsed())
 		{
 			panel.setVisible(false);
+		}
+	}
+
+	private void refreshAllSections()
+	{
+		if (!SwingUtilities.isEventDispatchThread())
+		{
+			log.error("Task list panel refresh failed - not event dispatch thread.");
+			return;
+		}
+
+		CustomRoute activeRoute = taskService.getActiveRoute();
+		if (activeRoute == null)
+		{
+			return;
+		}
+
+		HashMap<String, SectionHeaderPanel> routeHeaders = sectionHeaderPanels.get(activeRoute.getName());
+		if (routeHeaders != null)
+		{
+			routeHeaders.values().forEach(SectionHeaderPanel::refresh);
 		}
 	}
 

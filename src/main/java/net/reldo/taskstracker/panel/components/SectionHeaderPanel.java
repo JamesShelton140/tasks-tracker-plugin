@@ -6,6 +6,8 @@ import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -14,6 +16,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
+import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.runelite.client.ui.FontManager;
 
 @Slf4j
@@ -24,12 +27,16 @@ public class SectionHeaderPanel extends JPanel
 	private static final Color TEXT_COLOR = Color.WHITE;
 	private static final Color PROGRESS_COLOR = new Color(180, 180, 180);
 	private static final Color PROGRESS_COMPLETE_COLOR = new Color(100, 200, 100);
+	private static final Color DELETE_HOVER_COLOR = Color.RED;
 
 	private static final String ARROW_EXPANDED = "\u25BC";
 	private static final String ARROW_COLLAPSED = "\u25B6";
+	private static final String DELETE_ICON = "\uD83D\uDDD1";
 
+	private final TasksTrackerPlugin plugin;
 	@Getter
 	private final String sectionName;
+	private final JButton deleteButton;
 
 	@Getter
 	private boolean collapsed = false;
@@ -37,14 +44,17 @@ public class SectionHeaderPanel extends JPanel
 	private final JLabel titleLabel;
 	private final JLabel progressLabel;
 	private final String description;
+	private final JComponent listPanel;
 
 	@Setter
 	private Consumer<Boolean> collapseCallback;
 
 	public SectionHeaderPanel(TasksTrackerPlugin plugin, String sectionName, String description, JComponent listPanel)
 	{
+		this.plugin = plugin;
 		this.sectionName = sectionName;
 		this.description = description;
+		this.listPanel = listPanel;
 
 		setLayout(new BorderLayout());
 		setBackground(BACKGROUND_COLOR);
@@ -57,13 +67,47 @@ public class SectionHeaderPanel extends JPanel
 		titleLabel.setFont(FontManager.getRunescapeBoldFont());
 		updateTitleText();
 
+		// Container for east layout section
+		JPanel eastContainer = new JPanel();
+		eastContainer.setLayout(new BoxLayout(eastContainer, BoxLayout.X_AXIS));
+
 		// Progress label (right side)
 		progressLabel = new JLabel();
 		progressLabel.setForeground(PROGRESS_COLOR);
 		progressLabel.setFont(FontManager.getRunescapeSmallFont());
 
+		// Delete button
+		deleteButton = new JButton(DELETE_ICON);
+		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
+		deleteButton.addActionListener(RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionName));
+		deleteButton.setBackground(BACKGROUND_COLOR);
+		deleteButton.setForeground(TEXT_COLOR);
+		deleteButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				deleteButton.setForeground(DELETE_HOVER_COLOR);
+				setBackground(HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				deleteButton.setForeground(TEXT_COLOR);
+				setBackground(BACKGROUND_COLOR);
+			}
+		});
+
+		eastContainer.add(progressLabel);
+		eastContainer.add(deleteButton);
+
+		boolean editingARoute = plugin.getTaskService().activeRouteInEditMode();
+		progressLabel.setVisible(!editingARoute);
+		deleteButton.setVisible(editingARoute);
+
 		add(titleLabel, BorderLayout.CENTER);
-		add(progressLabel, BorderLayout.EAST);
+		add(eastContainer, BorderLayout.EAST);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
 		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.getTaskService().activeRouteInEditMode());
@@ -83,12 +127,14 @@ public class SectionHeaderPanel extends JPanel
 			public void mouseEntered(MouseEvent e)
 			{
 				setBackground(HOVER_COLOR);
+				deleteButton.setBackground(HOVER_COLOR);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
 				setBackground(BACKGROUND_COLOR);
+				deleteButton.setBackground(BACKGROUND_COLOR);
 			}
 		});
 	}
@@ -141,5 +187,12 @@ public class SectionHeaderPanel extends JPanel
 	{
 		this.collapsed = collapsed;
 		updateTitleText();
+	}
+
+	public void refresh()
+	{
+		boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
+		progressLabel.setVisible(!editingActiveRoute);
+		deleteButton.setVisible(editingActiveRoute);
 	}
 }

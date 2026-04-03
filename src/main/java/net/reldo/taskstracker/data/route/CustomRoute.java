@@ -179,17 +179,18 @@ public class CustomRoute
 		return sections.remove(section);
 	}
 
-	public void remove(Integer taskId)
+	public boolean remove(Integer taskId)
 	{
-		getFlattenedItems().stream()
-			.filter(item -> item.isTask() && item.getTaskId().equals(taskId))
+		RouteItem item = getFlattenedItems().stream()
+			.filter(filterItem -> filterItem.isTask() && filterItem.getTaskId().equals(taskId))
 			.findFirst()
-			.ifPresent(this::remove);
+			.orElse(null);
+		return remove(item);
 	}
 
 	public boolean remove(RouteItem item)
 	{
-		if (sections == null)
+		if (sections == null || item == null)
 		{
 			return false;
 		}
