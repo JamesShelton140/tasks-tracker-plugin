@@ -1,6 +1,7 @@
 package net.reldo.taskstracker.data.route;
 
 import java.awt.event.ActionListener;
+import java.util.UUID;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +76,7 @@ public class RouteEditActions
 			if (name != null && !name.trim().isEmpty())
 			{
 				name = name.trim();
-				route.addSection(new RouteSection(name));
+				route.addSection(new RouteSection(UUID.randomUUID().toString(), name));
 				saveRoute(plugin, route, true).actionPerformed(e);
 			}
 		};

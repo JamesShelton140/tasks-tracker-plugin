@@ -3,6 +3,7 @@ package net.reldo.taskstracker.data.route;
 import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
@@ -244,7 +245,7 @@ public class CustomRoute
 		RouteSection section = get(sectionName);
 		if (section == null)
 		{
-			section = new RouteSection(sectionName);
+			section = new RouteSection(UUID.randomUUID().toString(), sectionName);
 		}
 
 		addSection(index, section);

@@ -94,14 +94,14 @@ public class SectionHeaderPanel extends JPanel
 			public void mouseEntered(MouseEvent e)
 			{
 				deleteButton.setForeground(DELETE_HOVER_COLOR);
-				setBackground(HOVER_COLOR);
+				container.setBackground(HOVER_COLOR);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
 				deleteButton.setForeground(TEXT_COLOR);
-				setBackground(BACKGROUND_COLOR);
+				container.setBackground(BACKGROUND_COLOR);
 			}
 		});
 
@@ -112,13 +112,15 @@ public class SectionHeaderPanel extends JPanel
 		progressLabel.setVisible(!editingARoute);
 		deleteButton.setVisible(editingARoute);
 
-		add(titleLabel, BorderLayout.CENTER);
-		add(eastContainer, BorderLayout.EAST);
+		container.add(titleLabel, BorderLayout.CENTER);
+		container.add(eastContainer, BorderLayout.EAST);
+
+		add(container, BorderLayout.CENTER);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
 		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.getTaskService().activeRouteInEditMode());
-		addMouseListener(mouseDragEventForwarder);
-		addMouseMotionListener(mouseDragEventForwarder);
+		container.addMouseListener(mouseDragEventForwarder);
+		container.addMouseMotionListener(mouseDragEventForwarder);
 
 		// Click to toggle collapse
 		container.addMouseListener(new MouseAdapter()
@@ -132,14 +134,14 @@ public class SectionHeaderPanel extends JPanel
 			@Override
 			public void mouseEntered(MouseEvent e)
 			{
-				setBackground(HOVER_COLOR);
+				container.setBackground(HOVER_COLOR);
 				deleteButton.setBackground(HOVER_COLOR);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
-				setBackground(BACKGROUND_COLOR);
+				container.setBackground(BACKGROUND_COLOR);
 				deleteButton.setBackground(BACKGROUND_COLOR);
 			}
 		});
