@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
@@ -503,7 +502,7 @@ public class TaskListPanel extends JScrollPane
 					SectionHeaderPanel header = routeHeaders.get(sectionKey);
 					if (header == null)
 					{
-						header = new SectionHeaderPanel(sectionKey, section.getDescription(), dragAndDropPane);
+						header = new SectionHeaderPanel(plugin, sectionKey, section.getDescription(), dragAndDropPane);
 						sectionHeaderPanels.get(activeRoute.getName()).put(sectionKey, header);
 						dragAndDropPane.add(header);
 					}

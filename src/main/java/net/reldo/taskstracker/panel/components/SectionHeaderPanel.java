@@ -13,8 +13,8 @@ import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.components.MouseDragEventForwarder;
 
 @Slf4j
 public class SectionHeaderPanel extends JPanel
@@ -41,7 +41,7 @@ public class SectionHeaderPanel extends JPanel
 	@Setter
 	private Consumer<Boolean> collapseCallback;
 
-	public SectionHeaderPanel(String sectionName, String description, JComponent listPanel)
+	public SectionHeaderPanel(TasksTrackerPlugin plugin, String sectionName, String description, JComponent listPanel)
 	{
 		this.sectionName = sectionName;
 		this.description = description;
@@ -66,7 +66,7 @@ public class SectionHeaderPanel extends JPanel
 		add(progressLabel, BorderLayout.EAST);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
-		MouseDragEventForwarder mouseDragEventForwarder = new MouseDragEventForwarder(listPanel);
+		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.getTaskService().activeRouteInEditMode());
 		addMouseListener(mouseDragEventForwarder);
 		addMouseMotionListener(mouseDragEventForwarder);
 

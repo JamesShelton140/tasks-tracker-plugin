@@ -13,6 +13,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
@@ -29,6 +30,7 @@ import net.reldo.taskstracker.data.jsondatastore.types.FilterConfig;
 import net.reldo.taskstracker.data.jsondatastore.types.FilterType;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.RouteManager;
+import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.data.task.TaskType;
 import net.reldo.taskstracker.data.task.filters.RegexTextMatcher;
@@ -628,9 +630,12 @@ public class LoggedInPanel extends JPanel
 		});
 		deleteItem.setEnabled(routeSelector.getSelectedRouteName() != null);
 
-		// Route management menu items disabled while route editor in development
-		JMenuItem editorItem = new JMenuItem("Route Editor (Coming soon)");
-		editorItem.setEnabled(false);
+		boolean activeRouteInEditMode = taskService.activeRouteInEditMode();
+		JMenuItem editorItem = new JMenuItem(activeRouteInEditMode ? "Stop Editing" : "Edit Route");
+		editorItem.addActionListener(e -> {
+			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getName());
+		});
+		editorItem.setEnabled(routeSelector.getSelectedRouteName() != null);
 
 		menu.add(importItem);
 		menu.add(exportItem);
@@ -639,6 +644,49 @@ public class LoggedInPanel extends JPanel
 		menu.add(deleteItem);
 		menu.addSeparator();
 		menu.add(editorItem);
+
+		if (activeRouteInEditMode)
+		{
+			CustomRoute activeRoute = taskService.getActiveRoute();
+
+			menu.addSeparator();
+			JMenuItem addSectionItem = new JMenuItem("Add New Section");
+			addSectionItem.addActionListener(e -> {
+
+				String name = JOptionPane.showInputDialog(
+					null,
+					"Enter section name:",
+					"Create Section",
+					JOptionPane.PLAIN_MESSAGE
+				);
+
+				if (name != null && !name.trim().isEmpty())
+				{
+					name = name.trim();
+					activeRoute.addSection(new RouteSection(name));
+					taskService.addRouteIndex(activeRoute);
+					plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+					redrawTaskList();
+				}
+			});
+			menu.add(addSectionItem);
+
+			menu.addSeparator();
+			for (RouteSection section : activeRoute.getSections())
+			{
+				JMenuItem removeSectionItem = new JMenuItem("Remove Section - " + section.getName());
+				removeSectionItem.addActionListener(e -> {
+					if (activeRoute.remove(section))
+					{
+						taskService.addRouteIndex(activeRoute);
+						plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+						redrawTaskList();
+					}
+				});
+				menu.add(removeSectionItem);
+			}
+
+		}
 
 		// Show below the manage button
 		menu.show(routeSelector, routeSelector.getWidth() - menu.getPreferredSize().width,

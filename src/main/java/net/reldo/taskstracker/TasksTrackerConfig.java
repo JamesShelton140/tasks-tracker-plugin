@@ -316,12 +316,12 @@ public interface TasksTrackerConfig extends Config
 		keyName = "routeInEditMode",
 		name = "routeInEditMode",
 		description = "Contains the unique id of the route being edited.",
-		section = internalConfig//,
-//		hidden = true
+		section = internalConfig,
+		hidden = true
 	)
 	default String routeInEditMode()
 	{
-		return "Route 1";
+		return "";
 	}
 
 	/*=================================================================================================================

@@ -299,14 +299,14 @@ public class CustomRoute
 
 		for (RouteSection section : sections)
 		{
-			int itemsToNextSection = section.getItemCount() + sectionHeaderPad;
-			if (targetIndex <= itemsToNextSection)
+			int itemsInSection = section.getItemCount();
+			if (targetIndex <= itemsInSection)
 			{
 				section.add(targetIndex, item);
 				return true;
 			}
 
-			targetIndex -= itemsToNextSection;
+			targetIndex -= itemsInSection + sectionHeaderPad;
 		}
 
 		// Index after last section so append to it

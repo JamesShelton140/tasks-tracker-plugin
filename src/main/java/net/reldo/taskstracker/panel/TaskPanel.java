@@ -243,7 +243,9 @@ public class TaskPanel extends JPanel
 		container.add(buttons, BorderLayout.EAST);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
-		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.isRouteMode());
+		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel,
+			() -> plugin.isRouteMode() &&
+				plugin.getTaskService().activeRouteInEditMode());
 		addMouseListener(mouseDragEventForwarder);
 		addMouseMotionListener(mouseDragEventForwarder);
 
@@ -313,20 +315,22 @@ public class TaskPanel extends JPanel
 					pinTaskItem.setVisible(false);
 					overlayItem.setVisible(false);
 				}
-				if (plugin.isRouteEditMode())
+
+				CustomRoute editModeRoute = getRouteInEditMode();
+				if (editModeRoute != null)
 				{
 					routeEditHeader.setVisible(true);
+					routeEditHeader.setText("Edit Route - " + editModeRoute.getName());
 
-					if (!plugin.isRouteMode())
+					if (!plugin.isRouteMode() || !editModeRoute.equals(plugin.getTaskService().getActiveRoute()))
 					{
 						removeTaskFromRoute.setVisible(false);
-						CustomRoute route = getRouteInEditMode();
-						List<RouteSection> sections = (route != null) ? route.getSections() : new ArrayList<>();
+						List<RouteSection> sections = editModeRoute.getSections();
 
 						for (RouteSection section : sections)
 						{
 							JMenuItem addTaskToRoute = new JMenuItem("Add to - " + section.getName());
-							addTaskToRoute.addActionListener(e -> addTaskToRoute(route, section));
+							addTaskToRoute.addActionListener(e -> addTaskToRoute(editModeRoute, section));
 							sectionsMenuItems.add(addTaskToRoute);
 							popupMenu.add(addTaskToRoute);
 						}
@@ -424,6 +428,11 @@ public class TaskPanel extends JPanel
 
 	private CustomRoute getRouteInEditMode()
 	{
+		if (!plugin.isRouteEditMode())
+		{
+			return null;
+		}
+
 		TaskService taskService = plugin.getTaskService();
 		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 		return plugin.getTrackerGlobalConfigStore().loadRoutes(taskType).stream()

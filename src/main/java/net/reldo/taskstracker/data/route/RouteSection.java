@@ -34,10 +34,11 @@ public class RouteSection
 
 	/**
 	 * Returns all items in this section.
+	 * Initialises item list if it hasn't been already.
 	 */
 	public List<RouteItem> getItems()
 	{
-		if (items != null && !items.isEmpty())
+		if (items != null)
 		{
 			return items;
 		}
@@ -50,7 +51,8 @@ public class RouteSection
 
 			return items;
 		}
-		return new ArrayList<>();
+		setItems(new ArrayList<>());
+		return items;
 	}
 
 	public void setItems(List<RouteItem> items)

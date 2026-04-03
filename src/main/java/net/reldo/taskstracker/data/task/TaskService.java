@@ -415,7 +415,7 @@ public class TaskService
 		}
 	}
 
-	/** Returns the active route for a tab, or null if none. */
+	/** Returns the active route the current selected tab, or null if none. */
 	public CustomRoute getActiveRoute()
 	{
 		ConfigValues.TaskListTabs tab = configManager.getConfig(TasksTrackerConfig.class).taskListTab();
@@ -438,6 +438,20 @@ public class TaskService
 	public void clearActiveRoute(ConfigValues.TaskListTabs tab)
 	{
 		setActiveRoute(tab, null);
+	}
+
+	/** Returns true if a route is currently active for the selected tab and is in edit mode. */
+	public boolean activeRouteInEditMode()
+	{
+		TasksTrackerConfig config = configManager.getConfig(TasksTrackerConfig.class);
+		ConfigValues.TaskListTabs tab = config.taskListTab();
+		CustomRoute activeRoute = getActiveRoute();
+		if (activeRoute == null)
+		{
+			return false;
+		}
+
+		return config.routeInEditMode().equals(activeRoute.getName());
 	}
 
 	/** Finds a task by its struct ID. Returns null if not found. */
