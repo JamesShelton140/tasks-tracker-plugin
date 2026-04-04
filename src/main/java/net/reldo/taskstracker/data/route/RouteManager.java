@@ -189,7 +189,7 @@ public class RouteManager
 			return false;
 		}
 
-		CustomRoute route = new CustomRoute(name, UUID.randomUUID().toString(), taskService.getCurrentTaskType().getTaskJsonName());
+		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName());
 		route.setTaskType(taskService.getCurrentTaskType().getTaskJsonName());
 		route.setAuthor("User");
 		route.setDescription("Created from current task order");
