@@ -407,7 +407,7 @@ public class TaskPanel extends JPanel
 						for (RouteSection section : sections)
 						{
 							JMenuItem addTaskToRoute = new JMenuItem("Add to - " + section.getName());
-							addTaskToRoute.addActionListener(RouteEditActions.addTaskToSectionAction(plugin, editModeRoute, section.getName(), task.getStructId()));
+							addTaskToRoute.addActionListener(RouteEditActions.addTaskToSectionAction(plugin, editModeRoute, section.getId(), task.getStructId()));
 							sectionsMenuItems.add(addTaskToRoute);
 							popupMenu.add(addTaskToRoute);
 						}
@@ -513,7 +513,7 @@ public class TaskPanel extends JPanel
 		TaskService taskService = plugin.getTaskService();
 		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 		return plugin.getTrackerGlobalConfigStore().loadRoutes(taskType).stream()
-			.filter(filterRoute -> filterRoute.getName().equals(plugin.getConfig().routeInEditMode()))
+			.filter(filterRoute -> filterRoute.getId().equals(plugin.getConfig().routeInEditMode()))
 			.findFirst()
 			.orElse(null);
 	}

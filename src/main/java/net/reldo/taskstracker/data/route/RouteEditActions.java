@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 
 @Slf4j
-public class RouteEditActions
+public class RouteEditActions // todo: move these to RouteManager as non-static
 {
 	public static ActionListener addTaskAction(TasksTrackerPlugin plugin, CustomRoute route, Integer taskStructId)
 	{
@@ -26,16 +26,16 @@ public class RouteEditActions
 		};
 	}
 
-	public static ActionListener addTaskToSectionAction(TasksTrackerPlugin plugin, CustomRoute route, String sectionName, Integer taskStructId)
+	public static ActionListener addTaskToSectionAction(TasksTrackerPlugin plugin, CustomRoute route, String sectionId, Integer taskStructId)
 	{
 		return e -> {
-			if (plugin == null || route == null || taskStructId == null)
+			if (plugin == null || route == null || sectionId == null || taskStructId == null)
 			{
 				return;
 			}
 
-			log.debug("Adding task {} to section {} in route {}", taskStructId, sectionName, route.getName());
-			if (route.addItem(sectionName, RouteItem.forTask(taskStructId)))
+			log.debug("Adding task {} to section {} in route {}", taskStructId, sectionId, route.getName());
+			if (route.addItem(sectionId, RouteItem.forTask(taskStructId)))
 			{
 				saveRoute(plugin, route, false).actionPerformed(e);
 			}
@@ -82,16 +82,16 @@ public class RouteEditActions
 		};
 	}
 
-	public static ActionListener removeSectionAction(TasksTrackerPlugin plugin, CustomRoute route, String sectionName)
+	public static ActionListener removeSectionAction(TasksTrackerPlugin plugin, CustomRoute route, String sectionId)
 	{
 		return e -> {
-			if (plugin == null || route == null || sectionName == null)
+			if (plugin == null || route == null || sectionId == null)
 			{
 				return;
 			}
 
-			log.debug("Removing section {} from route {}", sectionName, route.getName());
-			RouteSection section = route.get(sectionName);
+			log.debug("Removing section {} from route {}", sectionId, route.getName());
+			RouteSection section = route.get(sectionId);
 			removeSectionAction(plugin, route, section).actionPerformed(e);
 		};
 	}

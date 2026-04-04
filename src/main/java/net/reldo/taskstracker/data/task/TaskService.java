@@ -262,8 +262,8 @@ public class TaskService
 			}
 		}
 
-		routeIndexes.put(route.getName(), routeIndex);
-		customItemRouteIndexes.put(route.getName(), customIndex);
+		routeIndexes.put(route.getId(), routeIndex);
+		customItemRouteIndexes.put(route.getId(), customIndex);
 	}
 
 	public int getTaskIndex(String sortCriteria, Integer taskStructId)
@@ -271,19 +271,19 @@ public class TaskService
 		return getTaskIndex(sortCriteria, taskStructId, true);
 	}
 
-	public int getTaskIndex(String indexName, Integer taskStructId, Boolean ascending)
+	public int getTaskIndex(String indexId, Integer taskStructId, Boolean ascending)
 	{
 		int position;
 		ConfigValues.TaskListTabs currentTab = configManager.getConfig(TasksTrackerConfig.class).taskListTab();
 		boolean activeRoute = hasActiveRoute(currentTab);
 
-		if (!activeRoute && sortedIndexes.containsKey(indexName))
+		if (!activeRoute && sortedIndexes.containsKey(indexId))
 		{
-			position = sortedIndexes.get(indexName).get(taskStructId);
+			position = sortedIndexes.get(indexId).get(taskStructId);
 		}
-		else if (activeRoute && routeIndexes.containsKey(indexName))
+		else if (activeRoute && routeIndexes.containsKey(indexId))
 		{
-			position = routeIndexes.get(indexName).get(taskStructId);
+			position = routeIndexes.get(indexId).get(taskStructId);
 		}
 		else
 		{
@@ -294,9 +294,9 @@ public class TaskService
 		return (ascending || activeRoute) ? position : tasks.size() - (position + 1);
 	}
 
-	public int getCustomItemIndex(String routeName, String customItemId)
+	public int getCustomItemIndex(String routeId, String customItemId)
 	{
-		HashMap<String, Integer> index = customItemRouteIndexes.get(routeName);
+		HashMap<String, Integer> index = customItemRouteIndexes.get(routeId);
 		if (index == null || !index.containsKey(customItemId))
 		{
 			return -1;
@@ -472,7 +472,7 @@ public class TaskService
 			return false;
 		}
 
-		return config.routeInEditMode().equals(activeRoute.getName());
+		return config.routeInEditMode().equals(activeRoute.getId());
 	}
 
 	/** Finds a task by its struct ID. Returns null if not found. */

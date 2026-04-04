@@ -55,17 +55,17 @@ public class RouteManager
 
 			if (route == null)
 			{
-				throw new Exception("Invalid route JSON");
+				throw new Exception("Invalid route JSON"); //todo remove exceptions
 			}
 
 			if (route.getName() == null || route.getName().isEmpty())
 			{
-                throw new Exception("Missing route name");
+				throw new Exception("Missing route name"); //todo remove exceptions
 			}
 
 			if (route.getTaskType() == null || route.getTaskType().isEmpty())
 			{
-				throw new Exception("Missing route task type");
+				throw new Exception("Missing route task type"); //todo remove exceptions
 			}
 
 			if (route.getId() == null || route.getId().isEmpty())
@@ -88,6 +88,15 @@ public class RouteManager
 				if (result != JOptionPane.YES_OPTION)
 				{
 					return false;
+				}
+			}
+
+			List<RouteSection> sections = route.getSections();
+			for (RouteSection section : sections)
+			{
+				if (section.getId() == null || section.getId().isEmpty())
+				{
+					section.setId(UUID.randomUUID().toString());
 				}
 			}
 
@@ -119,7 +128,7 @@ public class RouteManager
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 
 			trackerGlobalConfigStore.addRoute(currentTaskType, route);
-			trackerGlobalConfigStore.saveActiveRouteName(currentTab, currentTaskType, route.getName());
+			trackerGlobalConfigStore.saveActiveRouteId(currentTab, currentTaskType, route.getId());
 			taskService.setActiveRoute(currentTab, route);
 
 			log.debug("Imported route: {}", route.getName());
@@ -158,6 +167,43 @@ public class RouteManager
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
 
 		log.debug("Exported route to clipboard: {}", route.getName());
+		return true;
+	}
+
+	/**
+	 * Creates a new empty route.
+	 * Shows a dialog to enter the route name.
+	 * @return true if a route was created
+	 */
+	public boolean createEmptyRoute()
+	{
+		String name = JOptionPane.showInputDialog(
+			null,
+			"Enter route name:",
+			"Create Route",
+			JOptionPane.PLAIN_MESSAGE
+		);
+
+		if (name == null || name.trim().isEmpty())
+		{
+			return false;
+		}
+
+		name = name.trim();
+
+		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName());
+		route.setTaskType(taskService.getCurrentTaskType().getTaskJsonName());
+		route.setAuthor("User");
+		route.setDescription("Created in Tasks Tracker plugin.");
+
+		ConfigValues.TaskListTabs currentTab = config.taskListTab();
+		String taskType = route.getTaskType();
+
+		trackerGlobalConfigStore.addRoute(taskType, route);
+		trackerGlobalConfigStore.saveActiveRouteId(currentTab, taskType, route.getId());
+		taskService.setActiveRoute(currentTab, route);
+
+		log.debug("Created new route: {}", name);
 		return true;
 	}
 
@@ -203,7 +249,7 @@ public class RouteManager
 		String taskType = route.getTaskType();
 
 		trackerGlobalConfigStore.addRoute(taskType, route);
-		trackerGlobalConfigStore.saveActiveRouteName(currentTab, taskType, name);
+		trackerGlobalConfigStore.saveActiveRouteId(currentTab, taskType, route.getId());
 		taskService.setActiveRoute(currentTab, route);
 
 		log.debug("Created route from current order: {}", name);
@@ -219,16 +265,18 @@ public class RouteManager
 	{
 		ConfigValues.TaskListTabs currentTab = config.taskListTab();
 		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
-		String routeName = trackerGlobalConfigStore.loadActiveRouteName(currentTab, taskType);
+		CustomRoute activeRoute = taskService.getActiveRoute(currentTab);
 
-		if (routeName == null)
+		if (activeRoute == null)
 		{
 			return false;
 		}
 
+		String routeId = activeRoute.getId();
+
 		int result = JOptionPane.showConfirmDialog(
 			null,
-			"Delete route \"" + routeName + "\"?",
+			"Delete route \"" + activeRoute.getName() + "\"?",
 			"Delete Route",
 			JOptionPane.YES_NO_OPTION,
 			JOptionPane.WARNING_MESSAGE
@@ -239,20 +287,20 @@ public class RouteManager
 			return false;
 		}
 
-		trackerGlobalConfigStore.removeRoute(taskType, routeName);
+		trackerGlobalConfigStore.removeRoute(taskType, routeId);
 
 		// Clear active route on all tabs that reference the deleted route
 		for (ConfigValues.TaskListTabs tab : ConfigValues.TaskListTabs.values())
 		{
-			String tabRouteName = trackerGlobalConfigStore.loadActiveRouteName(tab, taskType);
-			if (routeName.equals(tabRouteName))
+			String tabRouteId = trackerGlobalConfigStore.loadActiveRouteId(tab, taskType);
+			if (routeId.equals(tabRouteId))
 			{
-				trackerGlobalConfigStore.saveActiveRouteName(tab, taskType, null);
+				trackerGlobalConfigStore.saveActiveRouteId(tab, taskType, null);
 				taskService.clearActiveRoute(tab);
 			}
 		}
 
-		log.debug("Deleted route: {}", routeName);
+		log.debug("Deleted route: {}", routeId);
 		return true;
 	}
 

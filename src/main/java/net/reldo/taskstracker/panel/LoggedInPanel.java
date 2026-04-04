@@ -452,15 +452,15 @@ public class LoggedInPanel extends JPanel
 		routeSelector.setAlignmentX(LEFT_ALIGNMENT);
 
 		routeSelector.addRouteChangeListener(e -> {
-			String selectedName = routeSelector.getSelectedRouteName();
+			String selectedId = routeSelector.getSelectedRouteId();
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 			String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 
 			// Save selection
-			plugin.getTrackerGlobalConfigStore().saveActiveRouteName(currentTab, taskType, selectedName);
+			plugin.getTrackerGlobalConfigStore().saveActiveRouteId(currentTab, taskType, selectedId);
 
 			// Update TaskService
-			CustomRoute route = selectedName != null
+			CustomRoute route = selectedId != null
 				? plugin.getTrackerGlobalConfigStore().getActiveRoute(currentTab, taskType)
 				: null;
 			taskService.setActiveRoute(currentTab, route);
@@ -574,14 +574,14 @@ public class LoggedInPanel extends JPanel
 		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 
 		List<CustomRoute> routes = plugin.getTrackerGlobalConfigStore().loadRoutes(taskType);
-		String activeName = plugin.getTrackerGlobalConfigStore().loadActiveRouteName(currentTab, taskType);
+		String activeId = plugin.getTrackerGlobalConfigStore().loadActiveRouteId(currentTab, taskType);
 
-		routeSelector.setRoutes(routes, activeName);
+		routeSelector.setRoutes(routes, activeId);
 
 		// Only set active route in TaskService when in route sort mode
 		if (sortPanel.isRouteMode())
 		{
-			CustomRoute activeRoute = activeName != null
+			CustomRoute activeRoute = activeId != null
 				? plugin.getTrackerGlobalConfigStore().getActiveRoute(currentTab, taskType)
 				: null;
 			taskService.setActiveRoute(currentTab, activeRoute);
@@ -627,12 +627,14 @@ public class LoggedInPanel extends JPanel
 
 		JMenuItem exportItem = new JMenuItem("Export Active Route to Clipboard");
 		exportItem.addActionListener(e -> routeManager.exportActiveRoute());
-		exportItem.setEnabled(routeSelector.getSelectedRouteName() != null);
+		exportItem.setEnabled(routeSelector.getSelectedRouteId() != null);
 
-		JMenuItem createItem = new JMenuItem("Create Route from Current Order...");
+		JMenuItem createItem = new JMenuItem("Create New Route");
 		createItem.addActionListener(e -> {
-			if (routeManager.createRouteFromCurrentOrder(taskListPanel.getVisibleTaskIds()))
+			if (routeManager.createEmptyRoute())
 			{
+				// force plugin into edit mode
+				plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", taskService.getActiveRoute().getId());
 				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
 			}
 		});
@@ -644,14 +646,14 @@ public class LoggedInPanel extends JPanel
 				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
 			}
 		});
-		deleteItem.setEnabled(routeSelector.getSelectedRouteName() != null);
+		deleteItem.setEnabled(routeSelector.getSelectedRouteId() != null);
 
 		boolean activeRouteInEditMode = taskService.activeRouteInEditMode();
 		JMenuItem editorItem = new JMenuItem(activeRouteInEditMode ? "Stop Editing" : "Edit Route");
 		editorItem.addActionListener(e -> {
-			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getName());
+			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getId());
 		});
-		editorItem.setEnabled(routeSelector.getSelectedRouteName() != null);
+		editorItem.setEnabled(routeSelector.getSelectedRouteId() != null);
 
 		menu.add(importItem);
 		menu.add(exportItem);

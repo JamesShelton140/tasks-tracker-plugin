@@ -27,7 +27,6 @@ public class CustomRoute
 	@NonNull
 	private String id;
 
-	/** Unique name identifying this route. */
 	@Expose
 	@NonNull
 	private String name;
@@ -187,10 +186,10 @@ public class CustomRoute
 		return false;
 	}
 
-	public RouteSection get(String sectionName)
+	public RouteSection get(String sectionId)
 	{
 		return sections.stream()
-			.filter(listSection -> listSection.getName().equals(sectionName))
+			.filter(listSection -> listSection.getId().equals(sectionId))
 			.findFirst()
 			.orElse(null);
 	}
@@ -230,22 +229,22 @@ public class CustomRoute
 		return false;
 	}
 
-	public void addSectionAfter(String beforeSectionName, String afterSectionName)
+	public void addSectionAfter(String beforeSectionId, String afterSectionId)
 	{
-		int index = sections.stream().filter(section -> section.getName().equals(beforeSectionName))
+		int index = sections.stream().filter(section -> section.getId().equals(beforeSectionId))
 			.findFirst()
 			.map( section -> sections.indexOf(section) + 1)
 			.orElse(0);
 
-		addSection(index, afterSectionName);
+		addSection(index, afterSectionId);
 	}
 
-	public void addSection(int index, String sectionName)
+	public void addSection(int index, String sectionId)
 	{
-		RouteSection section = get(sectionName);
+		RouteSection section = get(sectionId);
 		if (section == null)
 		{
-			section = new RouteSection(UUID.randomUUID().toString(), sectionName);
+			section = new RouteSection(UUID.randomUUID().toString(), "Section " + (sections.size() + 1));
 		}
 
 		addSection(index, section);
@@ -345,10 +344,10 @@ public class CustomRoute
 	/**
 	 * Add item to the specified section.
 	 */
-	public boolean addItem(String sectionName, RouteItem item)
+	public boolean addItem(String sectionId, RouteItem item)
 	{
 		Optional<RouteSection> foundSection = sections.stream()
-			.filter(section -> section.getName().equals(sectionName))
+			.filter(section -> section.getId().equals(sectionId))
 			.findFirst();
 
 		if (foundSection.isEmpty())
@@ -359,6 +358,12 @@ public class CustomRoute
 
 		foundSection.get().add(item);
 		return true;
+	}
+
+	@Override
+	public String toString()
+	{
+		return getName();
 	}
 
 }

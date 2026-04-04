@@ -36,6 +36,8 @@ public class SectionHeaderPanel extends JPanel
 
 	private final TasksTrackerPlugin plugin;
 	@Getter
+	private final String sectionId;
+	@Getter
 	private final String sectionName;
 	private final JButton deleteButton;
 
@@ -51,9 +53,10 @@ public class SectionHeaderPanel extends JPanel
 	@Setter
 	private Consumer<Boolean> collapseCallback;
 
-	public SectionHeaderPanel(TasksTrackerPlugin plugin, String sectionName, String description, JComponent listPanel)
+	public SectionHeaderPanel(TasksTrackerPlugin plugin, String sectionId, String sectionName, String description, JComponent listPanel)
 	{
 		this.plugin = plugin;
+		this.sectionId = sectionId;
 		this.sectionName = sectionName;
 		this.description = description;
 		this.listPanel = listPanel;
