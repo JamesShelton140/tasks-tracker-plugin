@@ -362,8 +362,7 @@ public class TaskListPanel extends JScrollPane
 
 		if (plugin.isRouteMode())
 		{
-			ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
-			CustomRoute activeRoute = taskService.getActiveRoute(currentTab);
+			CustomRoute activeRoute = taskService.getActiveRoute();
 
 			if (activeRoute == null)
 			{
@@ -639,7 +638,7 @@ public class TaskListPanel extends JScrollPane
 			if (!routeModeActive && plugin.getConfig().pinnedTaskId() != 0)
 			{
 				pinnedTaskStructId = plugin.getConfig().pinnedTaskId();
-				setComponentZOrder(taskPanelsByStructId.get(pinnedTaskStructId), 0);
+				dragAndDropPane.setComponentZOrder(taskPanelsByStructId.get(pinnedTaskStructId), 0);
 				numberOfPinnedTasks++;
 			}
 
@@ -676,7 +675,6 @@ public class TaskListPanel extends JScrollPane
 				}
 
 				listSize = dragAndDropPane.getComponentCount();
-
 			}
 
 			// Set custom item panel positions
@@ -702,9 +700,9 @@ public class TaskListPanel extends JScrollPane
 						CustomItemPanel customPanel = customItemPanels.get(customItemId);
 						if (customPanel == null)
 						{
-							customPanel = new CustomItemPanel(plugin, item);
+							customPanel = new CustomItemPanel(plugin, item); // todo: pass dragAndDropPane to constructor
 							customItemPanels.put(customItemId, customPanel);
-							add(customPanel);
+							dragAndDropPane.add(customPanel);
 						}
 						customPanel.setCompleted(completedIds.contains(customItemId));
 						customPanel.setVisible(true);
@@ -712,7 +710,6 @@ public class TaskListPanel extends JScrollPane
 						int indexPosition = taskService.getCustomItemIndex(activeRoute.getId(), customItemId);
 						if (indexPosition >= 0)
 						{
-							indexPosition += numberOfPinnedTasks;
 							listPanelsToDraw.put(indexPosition, customPanel);
 
 							if (priorityCustomItemPanel == null && !customPanel.isCompleted())
@@ -723,7 +720,7 @@ public class TaskListPanel extends JScrollPane
 					}
 				}
 
-				listSize = this.getComponentCount();
+				listSize = dragAndDropPane.getComponentCount();
 			}
 
 			// Set task panel positions

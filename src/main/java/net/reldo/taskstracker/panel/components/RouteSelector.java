@@ -3,6 +3,7 @@ package net.reldo.taskstracker.panel.components;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -13,7 +14,7 @@ import net.runelite.client.ui.ColorScheme;
 
 public class RouteSelector extends JPanel
 {
-	private static final CustomRoute NO_ROUTE_OPTION = new CustomRoute("ThisIsNotARoute", "(none)", "AllTaskTypes" );
+	private static final CustomRoute NO_ROUTE_OPTION = new CustomRoute("ThisIsNotARoute", "(none)", "AllTaskTypes", new ArrayList<>());
 
 	private final JComboBox<CustomRoute> routeDropdown;
 	private final JButton manageButton;

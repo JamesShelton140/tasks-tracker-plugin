@@ -265,8 +265,7 @@ public class TaskPanel extends JPanel
 		deleteButton.setText(DELETE_ICON);
 		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		deleteButton.addActionListener( e -> {
-			CustomRoute route = plugin.getTaskService().getActiveRoute();
-			RouteEditActions.removeTaskAction(plugin, route, task.getStructId()).actionPerformed(e);
+			RouteEditActions.removeTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
 		});
 		SwingUtil.removeButtonDecorations(deleteButton);
 		deleteButton.addMouseListener(new MouseAdapter()
@@ -287,7 +286,9 @@ public class TaskPanel extends JPanel
 		// Add button
 		addButton.setText("+");
 		addButton.setBorder(new EmptyBorder(0, 0, 0, 0));
-		addButton.addActionListener(RouteEditActions.addTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()));
+		addButton.addActionListener(e -> {
+			RouteEditActions.addTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
+		});
 		addButton.setFont(FontManager.getRunescapeSmallFont());
 		SwingUtil.removeButtonDecorations(addButton);
 		addButton.addMouseListener(new MouseAdapter()
@@ -366,8 +367,7 @@ public class TaskPanel extends JPanel
 
 		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
 		removeTaskFromRoute.addActionListener(e -> {
-			CustomRoute route = plugin.getTaskService().getActiveRoute();
-			RouteEditActions.removeTaskAction(plugin, route, task.getStructId()).actionPerformed(e);
+			RouteEditActions.removeTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
 		});
 		popupMenu.add(removeTaskFromRoute);
 

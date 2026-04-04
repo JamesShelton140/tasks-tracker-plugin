@@ -42,17 +42,14 @@ public class CustomRoute
 	@Expose
 	private String description;
 
-	/** Ordered list of sections making up this route. */
+	/** Ordered list of sections making up this route. Can be empty but not null. */
 	@Expose
+	@NonNull
 	private List<RouteSection> sections;
 
 	/** Returns all task IDs in route order, flattened across all sections. */
 	public List<Integer> getFlattenedOrder()
 	{
-		if (sections == null)
-		{
-			return List.of();
-		}
 		return sections.stream()
 			.flatMap(s -> s.getTaskIds().stream())
 			.collect(Collectors.toList());
@@ -61,10 +58,6 @@ public class CustomRoute
 	/** Returns all items (tasks and custom) in route order, flattened across all sections. */
 	public List<RouteItem> getFlattenedItems()
 	{
-		if (sections == null)
-		{
-			return List.of();
-		}
 		return sections.stream()
 			.flatMap(s -> s.getItems().stream())
 			.collect(Collectors.toList());
@@ -72,10 +65,6 @@ public class CustomRoute
 
 	public RouteSection getSectionForTask(int taskId)
 	{
-		if (sections == null)
-		{
-			return null;
-		}
 		return sections.stream()
 			.filter(s -> s.containsTask(taskId))
 			.findFirst()
@@ -95,10 +84,6 @@ public class CustomRoute
 	/** Returns true if the given task is the first task in its section (useful for rendering section headers). */
 	public boolean isFirstTaskInSection(int taskId)
 	{
-		if (sections == null)
-		{
-			return false;
-		}
 		for (RouteSection section : sections)
 		{
 			List<Integer> ids = section.getTaskIds();
@@ -116,10 +101,6 @@ public class CustomRoute
 	 */
 	public CustomRouteItem insertCustomItem(int taskId, CustomRouteItem customItem, boolean insertAfter)
 	{
-		if (sections == null)
-		{
-			return null;
-		}
 		for (RouteSection section : sections)
 		{
 			CustomRouteItem result = section.insertCustomItem(taskId, customItem, insertAfter);
@@ -134,10 +115,6 @@ public class CustomRoute
 	/** Returns all custom item IDs across all sections (for duplicate detection). */
 	public List<String> getAllCustomItemIds()
 	{
-		if (sections == null)
-		{
-			return List.of();
-		}
 		List<String> ids = new ArrayList<>();
 		for (RouteSection section : sections)
 		{
@@ -152,10 +129,6 @@ public class CustomRoute
 	/** Finds a custom item by its unique ID across all sections. */
 	public CustomRouteItem findCustomItem(String customItemId)
 	{
-		if (sections == null)
-		{
-			return null;
-		}
 		for (RouteSection section : sections)
 		{
 			for (CustomRouteItem ci : section.getCustomItems())
@@ -172,10 +145,6 @@ public class CustomRoute
 	/** Removes a custom item by ID from whichever section contains it. Returns true if found. */
 	public boolean removeCustomItem(String customItemId)
 	{
-		if (sections == null)
-		{
-			return false;
-		}
 		for (RouteSection section : sections)
 		{
 			if (section.removeCustomItem(customItemId))
@@ -196,11 +165,6 @@ public class CustomRoute
 
 	public boolean remove(RouteSection section)
 	{
-		if (sections == null)
-		{
-			return false;
-		}
-
 		return sections.remove(section);
 	}
 
@@ -215,7 +179,7 @@ public class CustomRoute
 
 	public boolean remove(RouteItem item)
 	{
-		if (sections == null || item == null)
+		if (item == null)
 		{
 			return false;
 		}
@@ -252,21 +216,11 @@ public class CustomRoute
 
 	public void addSection(RouteSection section)
 	{
-		if (sections == null)
-		{
-			sections = new ArrayList<>();
-		}
-
 		addSection(sections.size(), section);
 	}
 
 	public void addSection(int index, RouteSection section)
 	{
-		if (sections == null)
-		{
-			sections = new ArrayList<>();
-		}
-
 		int sectionWasRemoved = sections.subList(0, index).remove(section) ? 1 : 0;
 		if (sectionWasRemoved == 0)
 		{
@@ -283,11 +237,6 @@ public class CustomRoute
 
 	public boolean addItem(RouteItem item)
 	{
-		if (sections == null)
-		{
-			return false;
-		}
-
 		remove(item);
 
 		// Append to last section
@@ -313,11 +262,6 @@ public class CustomRoute
 	/** Enforces uniqueness of route items. */
 	public boolean addItem(int index, RouteItem item, boolean countSectionHeaders)
 	{
-		if (sections == null)
-		{
-			return false;
-		}
-
 		remove(item);
 
 		int sectionHeaderPad = countSectionHeaders ? 1 : 0;

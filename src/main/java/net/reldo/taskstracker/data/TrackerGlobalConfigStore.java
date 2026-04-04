@@ -17,6 +17,7 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.gson.GsonFactory;
 import net.reldo.taskstracker.data.route.CustomRoute;
+import net.reldo.taskstracker.data.route.RouteSection;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.runelite.client.config.ConfigManager;
 
@@ -80,7 +81,12 @@ public class TrackerGlobalConfigStore
 					route.setId(UUID.randomUUID().toString());
 				}
 
-				route.getSections().forEach(section -> {
+				List<RouteSection> sections = route.getSections();
+				if (sections == null)
+				{
+					sections = new ArrayList<>();
+				}
+				sections.forEach(section -> {
 					if (section.getId() == null || section.getId().isEmpty())
 					{
 						section.setId(UUID.randomUUID().toString());

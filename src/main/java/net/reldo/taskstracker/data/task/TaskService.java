@@ -231,6 +231,10 @@ public class TaskService
 	public void addRouteIndex(CustomRoute route)
 	{
 		List<RouteSection> sections = route.getSections();
+		if (sections.isEmpty())
+		{
+			return;
+		}
 		HashMap<Integer, Integer> routeIndex = new HashMap<>();
 		HashMap<String, Integer> customIndex = new HashMap<>();
 		int sectionStartIndex = 0;

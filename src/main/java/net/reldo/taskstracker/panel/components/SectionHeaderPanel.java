@@ -79,6 +79,7 @@ public class SectionHeaderPanel extends JPanel
 		// Container for east layout section
 		JPanel eastContainer = new JPanel();
 		eastContainer.setLayout(new BoxLayout(eastContainer, BoxLayout.X_AXIS));
+		eastContainer.setBackground(BACKGROUND_COLOR);
 
 		// Progress label (right side)
 		progressLabel = new JLabel();
@@ -88,7 +89,9 @@ public class SectionHeaderPanel extends JPanel
 		// Delete button
 		deleteButton = new JButton(DELETE_ICON);
 		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
-		deleteButton.addActionListener(RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionName));
+		deleteButton.addActionListener(e  -> {
+			RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionName).actionPerformed(e);
+		});
 		deleteButton.setBackground(BACKGROUND_COLOR);
 		deleteButton.setForeground(TEXT_COLOR);
 		deleteButton.addMouseListener(new MouseAdapter()
@@ -139,6 +142,7 @@ public class SectionHeaderPanel extends JPanel
 			{
 				container.setBackground(HOVER_COLOR);
 				deleteButton.setBackground(HOVER_COLOR);
+				eastContainer.setBackground(HOVER_COLOR);
 			}
 
 			@Override
@@ -146,6 +150,7 @@ public class SectionHeaderPanel extends JPanel
 			{
 				container.setBackground(BACKGROUND_COLOR);
 				deleteButton.setBackground(BACKGROUND_COLOR);
+				eastContainer.setBackground(BACKGROUND_COLOR);
 			}
 		});
 	}

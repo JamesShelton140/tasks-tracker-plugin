@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,13 +93,16 @@ public class RouteManager
 			}
 
 			List<RouteSection> sections = route.getSections();
-			for (RouteSection section : sections)
+			if (sections == null)
 			{
+				sections = new ArrayList<>();
+			}
+			sections.forEach(section -> {
 				if (section.getId() == null || section.getId().isEmpty())
 				{
 					section.setId(UUID.randomUUID().toString());
 				}
-			}
+			});
 
 			route.setTaskType(currentTaskType);
 
@@ -191,7 +195,7 @@ public class RouteManager
 
 		name = name.trim();
 
-		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName());
+		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName(), new ArrayList<>());
 		route.setTaskType(taskService.getCurrentTaskType().getTaskJsonName());
 		route.setAuthor("User");
 		route.setDescription("Created in Tasks Tracker plugin.");
@@ -235,7 +239,7 @@ public class RouteManager
 			return false;
 		}
 
-		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName());
+		CustomRoute route = new CustomRoute(UUID.randomUUID().toString(), name, taskService.getCurrentTaskType().getTaskJsonName(), new ArrayList<>());
 		route.setTaskType(taskService.getCurrentTaskType().getTaskJsonName());
 		route.setAuthor("User");
 		route.setDescription("Created from current task order");
