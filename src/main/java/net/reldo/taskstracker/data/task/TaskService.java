@@ -436,7 +436,11 @@ public class TaskService
 		else
 		{
 			tabActiveRoutes.put(tab, route);
-			addRouteIndex(route); // @todo move this on on task type change and route modification only
+
+			if (!routeIndexes.containsKey(route.getId()))
+			{
+				addRouteIndex(route);
+			}
 		}
 	}
 

@@ -726,13 +726,6 @@ public class LoggedInPanel extends JPanel
 		filterButtonActionNoRefresh("completed");
 	}
 
-	// TODO: unused — remove if no callers are added
-	private void actionAllFilterButtons()
-	{
-		actionAllFilterButtonsNoRefresh();
-		plugin.refreshAllTasks();
-	}
-
 	private JPanel getSearchPanel()
 	{
 		JPanel filtersPanel = new JPanel();
