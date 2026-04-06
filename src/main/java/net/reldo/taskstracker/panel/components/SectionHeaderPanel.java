@@ -19,6 +19,7 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.SwingUtil;
 
 @Slf4j
 public class SectionHeaderPanel extends JPanel
@@ -79,7 +80,8 @@ public class SectionHeaderPanel extends JPanel
 		// Container for east layout section
 		JPanel eastContainer = new JPanel();
 		eastContainer.setLayout(new BoxLayout(eastContainer, BoxLayout.X_AXIS));
-		eastContainer.setBackground(BACKGROUND_COLOR);
+//		eastContainer.setBackground(BACKGROUND_COLOR);
+		eastContainer.setOpaque(false);
 
 		// Progress label (right side)
 		progressLabel = new JLabel();
@@ -92,7 +94,7 @@ public class SectionHeaderPanel extends JPanel
 		deleteButton.addActionListener(e  -> {
 			RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionName).actionPerformed(e);
 		});
-		deleteButton.setBackground(BACKGROUND_COLOR);
+		SwingUtil.removeButtonDecorations(deleteButton);
 		deleteButton.setForeground(TEXT_COLOR);
 		deleteButton.addMouseListener(new MouseAdapter()
 		{
@@ -141,16 +143,12 @@ public class SectionHeaderPanel extends JPanel
 			public void mouseEntered(MouseEvent e)
 			{
 				container.setBackground(HOVER_COLOR);
-				deleteButton.setBackground(HOVER_COLOR);
-				eastContainer.setBackground(HOVER_COLOR);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e)
 			{
 				container.setBackground(BACKGROUND_COLOR);
-				deleteButton.setBackground(BACKGROUND_COLOR);
-				eastContainer.setBackground(BACKGROUND_COLOR);
 			}
 		});
 	}
