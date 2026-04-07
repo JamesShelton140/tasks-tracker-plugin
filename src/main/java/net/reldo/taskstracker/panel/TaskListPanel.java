@@ -580,7 +580,7 @@ public class TaskListPanel extends JScrollPane
 					return;
 				}
 
-				// Check if route changed - clean up stale custom item panels
+				// Check if route changed - clean up stale custom item panels -todo cache custom items per task type
 				ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
 				CustomRoute currentRoute = taskService.getActiveRoute(currentTab);
 				String currentRouteId = currentRoute != null ? currentRoute.getId() : null;
@@ -589,7 +589,7 @@ public class TaskListPanel extends JScrollPane
 				{
 					for (CustomItemPanel panel : customItemPanels.values())
 					{
-						remove(panel);
+						dragAndDropPane.remove(panel);
 					}
 					customItemPanels.clear();
 					cachedCustomItemRouteId = currentRouteId;
