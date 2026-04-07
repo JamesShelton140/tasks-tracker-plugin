@@ -77,6 +77,7 @@ public class LoggedInPanel extends JPanel
 	private SubFilterPanel subFilterPanel;
 	private JPanel subFilterWrapper;
 	private SortPanel sortPanel;
+	private JPanel searchPanel;
 	private final JToggleButton collapseBtn = new JToggleButton();
 	private JToggleButton tabOne;
 	private JToggleButton tabTwo;
@@ -241,6 +242,24 @@ public class LoggedInPanel extends JPanel
 	// TODO reduce duplication
 	public void refreshFilterButtonsFromConfig(ConfigValues.TaskListTabs tab)
 	{
+		JToggleButton tabButton = null;
+		switch (tab)
+		{
+			case TAB_ONE:
+				tabButton = tabOne;
+				break;
+			case TAB_TWO:
+				tabButton = tabTwo;
+				break;
+			case TAB_THREE:
+				tabButton = tabThree;
+				break;
+		}
+		if (tabButton != null && !tabButton.isSelected())
+		{
+			tabButton.setSelected(true);
+		}
+
 		if (plugin.isRouteMode())
 		{
 			trackedFilterBtn.setState(ConfigValues.TrackedFilterValues.TRACKED_AND_UNTRACKED.ordinal());
@@ -255,10 +274,6 @@ public class LoggedInPanel extends JPanel
 		switch (tab)
 		{
 			case TAB_ONE:
-				if (!tabOne.isSelected())
-				{
-					tabOne.setSelected(true);
-				}
 				trackedFilterBtn.setState(config.tab1TrackedValue().ordinal());
 				trackedFilterBtn.setEnabled(!config.tab1TrackedLock());
 				completedFilterBtn.setState(config.tab1CompletedValue().ordinal());
@@ -268,10 +283,6 @@ public class LoggedInPanel extends JPanel
 				actionAllFilterButtonsNoRefresh();
 				break;
 			case TAB_TWO:
-				if (!tabTwo.isSelected())
-				{
-					tabTwo.setSelected(true);
-				}
 				trackedFilterBtn.setState(config.tab2TrackedValue().ordinal());
 				trackedFilterBtn.setEnabled(!config.tab2TrackedLock());
 				completedFilterBtn.setState(config.tab2CompletedValue().ordinal());
@@ -281,10 +292,6 @@ public class LoggedInPanel extends JPanel
 				actionAllFilterButtonsNoRefresh();
 				break;
 			case TAB_THREE:
-				if (!tabThree.isSelected())
-				{
-					tabThree.setSelected(true);
-				}
 				trackedFilterBtn.setState(config.tab3TrackedValue().ordinal());
 				trackedFilterBtn.setEnabled(!config.tab3TrackedLock());
 				completedFilterBtn.setState(config.tab3CompletedValue().ordinal());
@@ -471,6 +478,8 @@ public class LoggedInPanel extends JPanel
 
 		routeSelector.addManageListener(e -> showRouteManagementMenu());
 
+		searchPanel = getSearchPanel();
+
 		// Route edit panel (visible only when sort is "Route" and selected route is in edit mode)
 		routeEditPanel = new RouteEditPanel(plugin, taskService);
 		routeEditPanel.addAddSectionListener(e ->
@@ -481,7 +490,7 @@ public class LoggedInPanel extends JPanel
 		northPanel.add(Box.createVerticalStrut(10));
 		northPanel.add(taskTypeDropdown);
 		northPanel.add(Box.createVerticalStrut(2));
-		northPanel.add(getSearchPanel());
+		northPanel.add(searchPanel);
 		northPanel.add(Box.createVerticalStrut(2));
 		northPanel.add(sortPanel);
 		northPanel.add(Box.createVerticalStrut(2));
@@ -495,6 +504,7 @@ public class LoggedInPanel extends JPanel
 		boolean isRouteMode = plugin.isRouteMode();
 		routeSelector.setVisible(isRouteMode);
 		subFilterWrapper.setVisible(!isRouteMode);
+		searchPanel.setVisible(!isRouteMode);
 		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
 
 		return northPanel;
@@ -600,6 +610,7 @@ public class LoggedInPanel extends JPanel
 		routeSelector.setVisible(isRouteMode);
 		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
 		subFilterWrapper.setVisible(!isRouteMode);
+		searchPanel.setVisible(!isRouteMode);
 
 		if (isRouteMode)
 		{
