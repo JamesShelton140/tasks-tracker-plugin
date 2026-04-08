@@ -9,14 +9,20 @@ import java.util.function.Consumer;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
+import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.RouteEditActions;
+import net.reldo.taskstracker.data.route.RouteSection;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.SwingUtil;
@@ -39,8 +45,7 @@ public class SectionHeaderPanel extends JPanel
 	@Getter
 	private final String sectionId;
 	@Getter
-	private final String sectionName;
-	private final JButton deleteButton;
+	private String sectionName;
 
 	@Getter
 	private boolean collapsed = false;
@@ -49,6 +54,7 @@ public class SectionHeaderPanel extends JPanel
 	private final JLabel titleLabel;
 	private final JLabel progressLabel;
 	private final String description;
+	private final JButton deleteButton;
 	private final JComponent listPanel;
 
 	@Setter
@@ -123,6 +129,14 @@ public class SectionHeaderPanel extends JPanel
 		container.add(titleLabel, BorderLayout.CENTER);
 		container.add(eastContainer, BorderLayout.EAST);
 
+		JPopupMenu popupMenu = new JPopupMenu();
+
+		JMenuItem editNameItem = new JMenuItem("Edit Name");
+		editNameItem.addActionListener(e -> renameSection());
+		popupMenu.add(editNameItem);
+
+		container.setComponentPopupMenu(popupMenu);
+
 		add(container, BorderLayout.CENTER);
 
 		// forward mouse drag events to parent panel for drag and drop reordering
@@ -136,7 +150,10 @@ public class SectionHeaderPanel extends JPanel
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{
-				toggleCollapse();
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					toggleCollapse();
+				}
 			}
 
 			@Override
@@ -201,6 +218,32 @@ public class SectionHeaderPanel extends JPanel
 	{
 		this.collapsed = collapsed;
 		updateTitleText();
+	}
+
+	private void renameSection()
+	{
+		JOptionPane optionPane = new JOptionPane("Enter section name:", JOptionPane.INFORMATION_MESSAGE);
+		optionPane.setInitialSelectionValue(sectionName);
+		optionPane.setWantsInput(true);
+		JDialog inputDialog = optionPane.createDialog(this, "Edit Section Name");
+		inputDialog.setAlwaysOnTop(true);
+		inputDialog.setVisible(true);
+		Object inputValue = optionPane.getInputValue();
+		if (inputValue != JOptionPane.UNINITIALIZED_VALUE)
+		{
+			String name = inputValue.toString();
+			CustomRoute activeRoute = plugin.getTaskService().getActiveRoute();
+			RouteSection section = activeRoute.get(sectionId);
+			if (section != null && !name.isEmpty())
+			{
+				section.setName(name);
+				sectionName = name;
+				updateTitleText();
+				plugin.getTaskService().addRouteIndex(activeRoute);
+				plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
+				plugin.refreshAllPanels();
+			}
+		}
 	}
 
 	public void refresh()
