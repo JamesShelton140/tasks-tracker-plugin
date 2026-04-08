@@ -48,7 +48,7 @@ public class FilterButton extends JToggleButton
 		addActionListener(e -> {
 			parentPanel.updateFilterText();
 			parentPanel.updateCollapseButtonText();
-			parentPanel.plugin.refreshAllTasks();
+			parentPanel.plugin.refreshAllPanels();
 		});
 
 		setupRightClickMenu();
@@ -80,7 +80,7 @@ public class FilterButton extends JToggleButton
 			parentPanel.setOnlySelected(key);
 			parentPanel.updateFilterText();
 			parentPanel.updateCollapseButtonText();
-			parentPanel.plugin.refreshAllTasks();
+			parentPanel.plugin.refreshAllPanels();
 		});
 		popupMenu.add(filterToOnlyItem);
 
@@ -89,7 +89,7 @@ public class FilterButton extends JToggleButton
 			parentPanel.setAllExceptSelected(key);
 			parentPanel.updateFilterText();
 			parentPanel.updateCollapseButtonText();
-			parentPanel.plugin.refreshAllTasks();
+			parentPanel.plugin.refreshAllPanels();
 		});
 		popupMenu.add(exceptItem);
 

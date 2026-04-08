@@ -151,6 +151,13 @@ public class LoggedInPanel extends JPanel
 		taskListPanel.refreshAllTasks();
 	}
 
+	public void refreshAllPanels()
+	{
+		updateCollapseButtonText();
+		refreshTabNames();
+		taskListPanel.refreshAllPanels();
+	}
+
 	private void createPanel()
 	{
 		setLayout(new BorderLayout());
@@ -727,7 +734,7 @@ public class LoggedInPanel extends JPanel
 	private void filterButtonAction(String filter)
 	{
 		filterButtonActionNoRefresh(filter);
-		plugin.refreshAllTasks();
+		plugin.refreshAllPanels();
 	}
 
 	private void actionAllFilterButtonsNoRefresh()
@@ -772,7 +779,7 @@ public class LoggedInPanel extends JPanel
 				textSearch.setToolTipText(null);
 			}
 
-			plugin.refreshAllTasks();
+			plugin.refreshAllPanels();
 		});
 
 		filtersPanel.add(textSearch);

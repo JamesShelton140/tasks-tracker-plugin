@@ -129,6 +129,16 @@ public class TaskListPanel extends JScrollPane
 		getCurrentTaskListListPanel().redraw();
 	}
 
+	public void refreshAllPanels()
+	{
+		log.debug("TaskListPanel.refreshAllPanels");
+		refreshAllTasks();
+		refreshAllCustomItems();
+		refreshAllSections();
+		refreshEmptyPanel();
+		updatePriorityPanelAfterRefresh();
+	}
+
 	public void refreshAllTasks()
 	{
 		log.debug("TaskListPanel.refreshAllTasks");
@@ -140,85 +150,6 @@ public class TaskListPanel extends JScrollPane
 		for (TaskPanel taskPanel : taskPanelsByStructId.values())
 		{
 			refreshTaskPanel(taskPanel);
-		}
-
-		// Refresh custom item panels (visibility based on section collapse)
-		if (plugin.isRouteMode())
-		{
-			ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
-			CustomRoute activeRoute = taskService.getActiveRoute(currentTab);
-
-			if (activeRoute != null)
-			{
-				String taskType = taskService.getCurrentTaskType().getTaskJsonName();
-				Set<String> completedIds = plugin.getTrackerGlobalConfigStore()
-					.loadCustomItemCompletion(taskType, activeRoute.getId());
-
-				for (CustomItemPanel panel : customItemPanels.values())
-				{
-					refreshCustomItemPanel(panel, activeRoute);
-				}
-
-				// Count section progress (tasks + custom items)
-				HashMap<String, SectionHeaderPanel> routeHeaders = sectionHeaderPanels.get(activeRoute.getId());
-				if (routeHeaders != null)
-				{
-					for (RouteSection section : activeRoute.getSections())
-					{
-						SectionHeaderPanel header = routeHeaders.get(section.getId());
-						if (header == null)
-						{
-							continue;
-						}
-
-						int total = section.getItemCount();
-						int completed = 0;
-						for (RouteItem item : section.getItems())
-						{
-							if (item.isTask())
-							{
-								TaskPanel tp = taskPanelsByStructId.get(item.getTaskId());
-								if (tp != null && tp.task.isCompleted())
-								{
-									completed++;
-								}
-							}
-							else if (item.getCustomItem() != null)
-							{
-								if (completedIds.contains(item.getCustomItem().getId()))
-								{
-									completed++;
-								}
-							}
-						}
-						header.setProgress(completed, total);
-					}
-				}
-			}
-		}
-
-		refreshEmptyPanel();
-		updatePriorityTaskAfterRefresh();
-		refreshAllSections();
-	}
-
-	private void refreshCustomItemPanel(CustomItemPanel panel, CustomRoute activeRoute)
-	{
-		for (RouteSection section : activeRoute.getSections())
-		{
-			boolean found = section.getCustomItems().stream()
-				.anyMatch(ci -> panel.getCustomItemId().equals(ci.getId()));
-			if (found)
-			{
-				HashMap<String, SectionHeaderPanel> routeHeaders = sectionHeaderPanels.get(activeRoute.getId());
-				if (routeHeaders != null)
-				{
-					SectionHeaderPanel header = routeHeaders.get(section.getId());
-					boolean collapsed = header != null && header.isCollapsed();
-					panel.setVisible(!collapsed);
-				}
-				return;
-			}
 		}
 	}
 
@@ -245,7 +176,7 @@ public class TaskListPanel extends JScrollPane
 		}
 		if (forceUpdatePriorityTaskFlag)
 		{
-			updatePriorityTaskAfterRefresh();
+			updatePriorityPanelAfterRefresh();
 		}
 	}
 
@@ -285,7 +216,7 @@ public class TaskListPanel extends JScrollPane
 			}
 			else
 			{
-				updatePriorityTaskAfterRefresh();
+				updatePriorityPanelAfterRefresh();
 			}
 		}
 
@@ -334,8 +265,93 @@ public class TaskListPanel extends JScrollPane
 		}
 	}
 
+	private void refreshAllCustomItems()
+	{
+		log.debug("TaskListPanel.refreshAllCustomItems");
+		if (!SwingUtilities.isEventDispatchThread())
+		{
+			log.error("Task list panel refresh failed - not event dispatch thread.");
+			return;
+		}
+		// Refresh custom item panels (visibility based on section collapse)
+		if (plugin.isRouteMode())
+		{
+			ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
+			CustomRoute activeRoute = taskService.getActiveRoute(currentTab);
+
+			if (activeRoute != null)
+			{
+				String taskType = taskService.getCurrentTaskType().getTaskJsonName();
+				Set<String> completedIds = plugin.getTrackerGlobalConfigStore()
+					.loadCustomItemCompletion(taskType, activeRoute.getId());
+
+				for (CustomItemPanel panel : customItemPanels.values())
+				{
+					refreshCustomItemPanel(panel, activeRoute);
+				}
+
+				// Count section progress (tasks + custom items) // todo move this to section header panel refresh
+				HashMap<String, SectionHeaderPanel> routeHeaders = sectionHeaderPanels.get(activeRoute.getId());
+				if (routeHeaders != null)
+				{
+					for (RouteSection section : activeRoute.getSections())
+					{
+						SectionHeaderPanel header = routeHeaders.get(section.getId());
+						if (header == null)
+						{
+							continue;
+						}
+
+						int total = section.getItemCount();
+						int completed = 0;
+						for (RouteItem item : section.getItems())
+						{
+							if (item.isTask())
+							{
+								TaskPanel tp = taskPanelsByStructId.get(item.getTaskId());
+								if (tp != null && tp.task.isCompleted())
+								{
+									completed++;
+								}
+							}
+							else if (item.getCustomItem() != null)
+							{
+								if (completedIds.contains(item.getCustomItem().getId()))
+								{
+									completed++;
+								}
+							}
+						}
+						header.setProgress(completed, total);
+					}
+				}
+			}
+		}
+	}
+
+	private void refreshCustomItemPanel(CustomItemPanel panel, CustomRoute activeRoute)
+	{
+		for (RouteSection section : activeRoute.getSections())
+		{
+			boolean found = section.getCustomItems().stream()
+				.anyMatch(ci -> panel.getCustomItemId().equals(ci.getId()));
+			if (found)
+			{
+				HashMap<String, SectionHeaderPanel> routeHeaders = sectionHeaderPanels.get(activeRoute.getId());
+				if (routeHeaders != null)
+				{
+					SectionHeaderPanel header = routeHeaders.get(section.getId());
+					boolean collapsed = header != null && header.isCollapsed();
+					panel.setVisible(!collapsed);
+				}
+				return;
+			}
+		}
+	}
+
 	private void refreshAllSections()
 	{
+		log.debug("TaskListPanel.refreshAllSections");
 		if (!SwingUtilities.isEventDispatchThread())
 		{
 			log.error("Task list panel refresh failed - not event dispatch thread.");
@@ -409,7 +425,7 @@ public class TaskListPanel extends JScrollPane
 			.forEach(TaskPanel::refresh);
 	}
 
-	public void updatePriorityTaskAfterRefresh()
+	public void updatePriorityPanelAfterRefresh()
 	{
 		forceUpdatePriorityTaskFlag = false;
 
@@ -603,7 +619,7 @@ public class TaskListPanel extends JScrollPane
 
 				redrawListItems();
 
-				SwingUtilities.invokeLater(TaskListPanel.this::refreshAllTasks);
+				SwingUtilities.invokeLater(TaskListPanel.this::refreshAllPanels);
 			}
 			else
 			{
@@ -665,7 +681,7 @@ public class TaskListPanel extends JScrollPane
 						dragAndDropPane.add(header);
 					}
 					header.setCollapseCallback(collapsed -> {
-						SwingUtilities.invokeLater(TaskListPanel.this::refreshAllTasks);
+						SwingUtilities.invokeLater(TaskListPanel.this::refreshAllPanels);
 					});
 					header.setVisible(true);
 
@@ -820,14 +836,14 @@ public class TaskListPanel extends JScrollPane
 				taskService.addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
 
-				// if task was dragged to the top then the list needs to be redrawn otherwise just update the priority panel
+				// if task was dragged to the top then the list needs to be redrawn otherwise just update the panels
 				if (endingPosition == 0)
 				{
 					redraw();
 				}
 				else
 				{
-					refreshAllTasks();
+					refreshAllPanels();
 				}
 			}
 

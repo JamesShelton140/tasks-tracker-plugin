@@ -47,7 +47,7 @@ public class DynamicDropdownFilterPanel extends FilterPanel
 		dropdown.addActionListener(e -> {
 			ComboItem selection = dropdown.getItemAt(dropdown.getSelectedIndex());
 			updateFilterConfig();
-			plugin.refreshAllTasks();
+			plugin.refreshAllPanels();
 			log.debug("selected: {} {}", selection.getLabel(), selection.getValue());
 		});
 

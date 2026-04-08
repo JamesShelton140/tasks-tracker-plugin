@@ -72,6 +72,14 @@ public class TasksTrackerPluginPanel extends PluginPanel
 		}
 	}
 
+	public void refreshAllPanels()
+	{
+		if (loggedInPanelVisible)
+		{
+			loggedInPanel.refreshAllPanels();
+		}
+	}
+
 	public void refreshFilterButtonsFromConfig(ConfigValues.TaskListTabs tab)
 	{
 		if (loggedInPanelVisible)

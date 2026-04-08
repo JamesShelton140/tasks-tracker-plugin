@@ -258,7 +258,7 @@ public class TasksTrackerPlugin extends Plugin
 		log.debug("onConfigChanged {} {}", configChanged.getKey(), configChanged.getNewValue());
 		if (configChanged.getKey().equals("untrackUponCompletion"))
 		{
-			SwingUtilities.invokeLater(pluginPanel::refreshAllTasks);
+			SwingUtilities.invokeLater(pluginPanel::refreshAllPanels);
 
 			if (config.untrackUponCompletion())
 			{
@@ -274,7 +274,7 @@ public class TasksTrackerPlugin extends Plugin
 		if (configChanged.getKey().startsWith("tab")) // task list tab config items all start 'tab#'
 		{
 			pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
-			refreshAllTasks();
+			refreshAllPanels();
 		}
 
 		if (configChanged.getKey().equals("taskPanelBatchSize"))
@@ -429,7 +429,7 @@ public class TasksTrackerPlugin extends Plugin
 				{
 					pluginPanel.drawNewTaskType();
 					pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
-					pluginPanel.refreshAllTasks();
+					pluginPanel.refreshAllPanels();
 				});
 			});
 		}
@@ -646,7 +646,7 @@ public class TasksTrackerPlugin extends Plugin
 				}
 				else
 				{
-					SwingUtilities.invokeLater(() -> pluginPanel.refreshAllTasks());
+					SwingUtilities.invokeLater(() -> pluginPanel.refreshAllPanels());
 				}
 			})
 			.thenApply(v -> true);
@@ -722,6 +722,11 @@ public class TasksTrackerPlugin extends Plugin
 	public void redrawTaskList()
 	{
 		pluginPanel.redrawTaskList();
+	}
+
+	public void refreshAllPanels()
+	{
+		SwingUtilities.invokeLater(() -> pluginPanel.refreshAllPanels());
 	}
 
 	/**

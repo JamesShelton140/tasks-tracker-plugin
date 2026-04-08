@@ -183,8 +183,7 @@ public class CustomItemPanel extends JPanel
 		updateAppearance();
 
 		String taskType = plugin.getTaskService().getCurrentTaskType().getTaskJsonName();
-		ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
-		CustomRoute activeRoute = plugin.getTaskService().getActiveRoute(currentTab);
+		CustomRoute activeRoute = plugin.getTaskService().getActiveRoute();
 		if (activeRoute == null)
 		{
 			return;
@@ -203,7 +202,7 @@ public class CustomItemPanel extends JPanel
 		configStore.saveCustomItemCompletion(taskType, activeRoute.getId(), completedIds);
 
 		// Full redraw to update section progress and overlay priority
-		plugin.pluginPanel.redraw();
+		plugin.refreshAllPanels();
 	}
 
 	private void updateAppearance()
