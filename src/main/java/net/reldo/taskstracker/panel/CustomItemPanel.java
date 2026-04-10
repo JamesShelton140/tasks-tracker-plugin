@@ -93,17 +93,20 @@ public class CustomItemPanel extends JPanel
 		}
 
 		completeToggle = new JToggleButton();
-		plugin.getSpriteManager().getSpriteAsync(UNCHECKED_ICON, 0, img -> {
+//		plugin.getSpriteManager().getSpriteAsync(UNCHECKED_ICON, 0, img -> {
+		plugin.getSpriteManager().getSpriteAsync(2849, 0, img -> {
 			SwingUtilities.invokeLater(() -> {
 				completeToggle.setIcon(new ImageIcon(img));
 			});
 		});
-		plugin.getSpriteManager().getSpriteAsync(CHECKED_ICON, 0, img -> {
+//		plugin.getSpriteManager().getSpriteAsync(CHECKED_ICON, 0, img -> {
+		plugin.getSpriteManager().getSpriteAsync(2850, 0, img -> {
 			SwingUtilities.invokeLater(() -> {
 				completeToggle.setSelectedIcon(new ImageIcon(img));
 			});
 		});
-		completeToggle.setPreferredSize(new Dimension(17, 17));
+//		completeToggle.setPreferredSize(new Dimension(17, 17));
+		completeToggle.setPreferredSize(new Dimension(18, 18));
 		completeToggle.setBorder(new EmptyBorder(0, 0, 0, 0));
 		completeToggle.setFocusable(false);
 		completeToggle.setToolTipText("Toggle completion");
@@ -120,6 +123,49 @@ public class CustomItemPanel extends JPanel
 		rightPanel.setOpaque(false);
 		rightPanel.setBorder(new EmptyBorder(0, 0, 0, 7));
 		rightPanel.add(completeToggle, BorderLayout.CENTER);
+
+//todo remove
+		JToggleButton completeToggle2 = new JToggleButton();
+		plugin.getSpriteManager().getSpriteAsync(2847, 0, img -> {
+			SwingUtilities.invokeLater(() -> {
+				completeToggle2.setIcon(new ImageIcon(img));
+			});
+		});
+		plugin.getSpriteManager().getSpriteAsync(2848, 0, img -> {
+			SwingUtilities.invokeLater(() -> {
+				completeToggle2.setSelectedIcon(new ImageIcon(img));
+			});
+		});
+		completeToggle2.setPreferredSize(new Dimension(18, 18));
+		completeToggle2.setBorder(new EmptyBorder(0, 0, 0, 0));
+		completeToggle2.setFocusable(false);
+		completeToggle2.setToolTipText("Toggle completion");
+//		completeToggle2.addActionListener(e -> onCompletionToggled());
+		SwingUtil.removeButtonDecorations(completeToggle2);
+//		rightPanel.add(completeToggle2, BorderLayout.NORTH);
+//todo remove
+
+//todo remove
+		JToggleButton completeToggle3 = new JToggleButton();
+		plugin.getSpriteManager().getSpriteAsync(2849, 0, img -> {
+			SwingUtilities.invokeLater(() -> {
+				completeToggle3.setIcon(new ImageIcon(img));
+			});
+		});
+		plugin.getSpriteManager().getSpriteAsync(2850, 0, img -> {
+			SwingUtilities.invokeLater(() -> {
+				completeToggle3.setSelectedIcon(new ImageIcon(img));
+			});
+		});
+		completeToggle3.setPreferredSize(new Dimension(18, 18));
+		completeToggle3.setBorder(new EmptyBorder(0, 0, 0, 0));
+		completeToggle3.setFocusable(false);
+		completeToggle3.setToolTipText("Toggle completion");
+//		completeToggle3.addActionListener(e -> onCompletionToggled());
+		SwingUtil.removeButtonDecorations(completeToggle3);
+//		rightPanel.add(completeToggle3, BorderLayout.SOUTH);
+//todo remove
+
 
 		container.add(iconLabel, BorderLayout.WEST);
 		container.add(body, BorderLayout.CENTER);
