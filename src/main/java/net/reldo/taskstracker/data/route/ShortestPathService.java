@@ -57,6 +57,10 @@ public class ShortestPathService
 
 	public void clearGps()
 	{
+		if (currentGpsTarget.get() == null)
+		{
+			return;
+		}
 		currentGpsTarget.set(null);
 		eventBus.post(new PluginMessage("shortestpath", "clear"));
 	}
