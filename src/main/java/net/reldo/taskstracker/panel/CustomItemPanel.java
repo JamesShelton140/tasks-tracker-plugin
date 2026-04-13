@@ -7,9 +7,15 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.JToolTip;
@@ -17,15 +23,18 @@ import javax.swing.ToolTipManager;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.HtmlUtil;
 import net.reldo.taskstracker.TasksTrackerPlugin;
-import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.TrackerGlobalConfigStore;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.CustomRouteItem;
+import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.reldo.taskstracker.data.route.RouteItem;
+import net.reldo.taskstracker.panel.components.ConditionalMouseDragEventForwarder;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
@@ -46,21 +55,26 @@ public class CustomItemPanel extends JPanel
 	private static final int MAX_ICON_DIMENSION = 22;
 
 	private final TasksTrackerPlugin plugin;
+	@Getter
 	private final RouteItem routeItem;
 	private final CustomRouteItem customItem;
+	private final JComponent listPanel;
 	private final JPanel container;
+	private final JLabel descriptionLabel;
 	private final JLabel iconLabel;
+	private final JLabel nameLabel;
 	private final JToggleButton completeToggle;
 
 	@Getter
 	private boolean completed = false;
 
-	public CustomItemPanel(TasksTrackerPlugin plugin, RouteItem routeItem)
+	public CustomItemPanel(TasksTrackerPlugin plugin, RouteItem routeItem, JComponent listPanel)
 	{
 		super(new BorderLayout());
 		this.plugin = plugin;
 		this.routeItem = routeItem;
 		this.customItem = routeItem.getCustomItem();
+		this.listPanel = listPanel;
 
 		setOpaque(false);
 		setBorder(new EmptyBorder(0, 0, 7, 0));
@@ -76,12 +90,12 @@ public class CustomItemPanel extends JPanel
 		setFallbackIcon();
 		loadSpriteIcon();
 
-		JLabel nameLabel = new JLabel();
+		nameLabel = new JLabel();
 		nameLabel.setFont(FontManager.getRunescapeSmallFont());
 		nameLabel.setForeground(Color.WHITE);
 		nameLabel.setText(customItem.getDisplayLabel());
 
-		JLabel descriptionLabel = new JLabel();
+		descriptionLabel = new JLabel();
 		descriptionLabel.setFont(FontManager.getRunescapeSmallFont());
 		descriptionLabel.setForeground(Color.GRAY);
 		String desc = customItem.getDescription();
@@ -126,6 +140,11 @@ public class CustomItemPanel extends JPanel
 		add(container, BorderLayout.NORTH);
 
 		ToolTipManager.sharedInstance().registerComponent(this);
+
+		// forward mouse drag events to parent panel for drag and drop reordering
+		ConditionalMouseDragEventForwarder mouseDragEventForwarder = new ConditionalMouseDragEventForwarder(listPanel, () -> plugin.getTaskService().activeRouteInEditMode());
+		container.addMouseListener(mouseDragEventForwarder);
+		container.addMouseMotionListener(mouseDragEventForwarder);
 	}
 
 	private void setFallbackIcon()
@@ -176,6 +195,70 @@ public class CustomItemPanel extends JPanel
 		});
 	}
 
+	public JPopupMenu createTaskPopupMenu()
+	{
+		JPopupMenu popupMenu = new JPopupMenu();
+
+		JMenuItem routeEditHeader = new JMenuItem("Edit route");
+		routeEditHeader.setEnabled(false);
+		popupMenu.add(routeEditHeader);
+
+		JMenuItem editNameItem = new JMenuItem("Edit Name");
+		editNameItem.addActionListener(e -> editCustomItem("Name", customItem.getLabel(), customItem::setLabel));
+		popupMenu.add(editNameItem);
+
+		JMenuItem editDescriptionItem = new JMenuItem("Edit Description");
+		editDescriptionItem.addActionListener(e -> editCustomItem("Description", customItem.getDescription(), customItem::setDescription));
+		popupMenu.add(editDescriptionItem);
+
+		JMenuItem editNoteItem = new JMenuItem("Edit Note");
+		editNoteItem.addActionListener(e -> editCustomItem("Note", routeItem.getNote(), routeItem::setNote));
+		popupMenu.add(editNoteItem);
+
+		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
+		removeTaskFromRoute.addActionListener(e -> {
+			RouteEditActions.removeRouteItemAction(plugin, plugin.getTaskService().getActiveRoute(), routeItem).actionPerformed(e);
+		});
+		popupMenu.add(removeTaskFromRoute);
+
+		popupMenu.addPopupMenuListener(new PopupMenuListener()
+		{
+
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent)
+			{
+				if (plugin.getTaskService().activeRouteInEditMode())
+				{
+					routeEditHeader.setVisible(true);
+					editNameItem.setVisible(true);
+					editDescriptionItem.setVisible(true);
+					editNoteItem.setVisible(true);
+					removeTaskFromRoute.setVisible(true);
+				}
+				else
+				{
+					routeEditHeader.setVisible(false);
+					editNameItem.setVisible(false);
+					editDescriptionItem.setVisible(false);
+					editNoteItem.setVisible(false);
+					removeTaskFromRoute.setVisible(false);
+				}
+			}
+
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent)
+			{
+			}
+
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent popupMenuEvent)
+			{
+			}
+		});
+
+		return popupMenu;
+	}
+
 	private void onCompletionToggled()
 	{
 		completed = completeToggle.isSelected();
@@ -200,12 +283,14 @@ public class CustomItemPanel extends JPanel
 		}
 		configStore.saveCustomItemCompletion(taskType, activeRoute.getId(), completedIds);
 
-		// Full redraw to update section progress and overlay priority
+		// Full refresh to update section progress and overlay priority
 		plugin.refreshAllPanels();
 	}
 
 	private void updateAppearance()
 	{
+		nameLabel.setText(customItem.getDisplayLabel());
+		descriptionLabel.setText(customItem.getDescription());
 		container.setBackground(completed ? BACKGROUND_COMPLETED : BACKGROUND_DEFAULT);
 	}
 
@@ -323,6 +408,30 @@ public class CustomItemPanel extends JPanel
 					.left(line)
 					.leftFont(FontManager.getRunescapeFont().deriveFont(java.awt.Font.ITALIC))
 					.build());
+			}
+		}
+	}
+
+	private void editCustomItem(String property, String value, Consumer<String> action)
+	{
+		JOptionPane optionPane = new JOptionPane(property + ":", JOptionPane.INFORMATION_MESSAGE);
+		optionPane.setInitialSelectionValue(value);
+		optionPane.setWantsInput(true);
+		JDialog inputDialog = optionPane.createDialog(this, "Edit Custom Item " + property);
+		inputDialog.setAlwaysOnTop(true);
+		inputDialog.setVisible(true);
+		Object inputValue = optionPane.getInputValue();
+		if (inputValue != JOptionPane.UNINITIALIZED_VALUE)
+		{
+			String inputString = inputValue.toString();
+			CustomRoute activeRoute = plugin.getTaskService().getActiveRoute();
+			if (!inputString.isEmpty())
+			{
+				action.accept(inputString);
+				updateAppearance();
+				plugin.getTaskService().addRouteIndex(activeRoute);
+				plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
+				plugin.refreshAllPanels();
 			}
 		}
 	}

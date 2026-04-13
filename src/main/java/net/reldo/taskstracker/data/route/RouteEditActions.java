@@ -21,7 +21,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 			log.debug("Adding task {} to route {}", taskStructId, route.getName());
 			if (route.addItem(taskStructId))
 			{
-				saveRoute(plugin, route, false).actionPerformed(e);
+				saveRoute(plugin, route, true).actionPerformed(e);
 			}
 		};
 	}
@@ -37,7 +37,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 			log.debug("Adding task {} to section {} in route {}", taskStructId, sectionId, route.getName());
 			if (route.addItem(sectionId, RouteItem.forTask(taskStructId)))
 			{
-				saveRoute(plugin, route, false).actionPerformed(e);
+				saveRoute(plugin, route, true).actionPerformed(e);
 			}
 		};
 	}
@@ -52,6 +52,53 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 
 			log.debug("Removing task {} from route {}", taskStructId, route.getName());
 			if (route.remove(taskStructId))
+			{
+				saveRoute(plugin, route, true).actionPerformed(e);
+			}
+		};
+	}
+	public static ActionListener addRouteItemAction(TasksTrackerPlugin plugin, CustomRoute route, RouteItem routeItem)
+	{
+		return e -> {
+			if (plugin == null || route == null || routeItem == null)
+			{
+				return;
+			}
+
+			log.debug("Adding item to route {}", route.getName());
+			if (route.addItem(routeItem))
+			{
+				saveRoute(plugin, route, true).actionPerformed(e);
+			}
+		};
+	}
+
+	public static ActionListener addRouteItemToSectionAction(TasksTrackerPlugin plugin, CustomRoute route, String sectionId, RouteItem routeItem)
+	{
+		return e -> {
+			if (plugin == null || route == null || sectionId == null || routeItem == null)
+			{
+				return;
+			}
+
+			log.debug("Adding item to section {} in route {}", sectionId, route.getName());
+			if (route.addItem(sectionId, routeItem))
+			{
+				saveRoute(plugin, route, true).actionPerformed(e);
+			}
+		};
+	}
+
+	public static ActionListener removeRouteItemAction(TasksTrackerPlugin plugin, CustomRoute route, RouteItem routeItem)
+	{
+		return e -> {
+			if (plugin == null || route == null || routeItem == null)
+			{
+				return;
+			}
+
+			log.debug("Removing item from route {}", route.getName());
+			if (route.remove(routeItem))
 			{
 				saveRoute(plugin, route, true).actionPerformed(e);
 			}

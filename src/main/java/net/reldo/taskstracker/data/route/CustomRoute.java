@@ -63,6 +63,11 @@ public class CustomRoute
 			.collect(Collectors.toList());
 	}
 
+	public boolean contains(int taskId)
+	{
+		return getFlattenedOrder().contains(taskId);
+	}
+
 	public RouteSection getSectionForTask(int taskId)
 	{
 		return sections.stream()

@@ -265,7 +265,7 @@ public class TaskPanel extends JPanel
 		deleteButton.setText(DELETE_ICON);
 		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		deleteButton.addActionListener( e -> {
-			RouteEditActions.removeTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
+			RouteEditActions.removeTaskAction(plugin, getRouteInEditMode(), task.getStructId()).actionPerformed(e);
 		});
 		SwingUtil.removeButtonDecorations(deleteButton);
 		deleteButton.addMouseListener(new MouseAdapter()
@@ -287,7 +287,7 @@ public class TaskPanel extends JPanel
 		addButton.setText("+");
 		addButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		addButton.addActionListener(e -> {
-			RouteEditActions.addTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
+			RouteEditActions.addTaskAction(plugin, getRouteInEditMode(), task.getStructId()).actionPerformed(e);
 		});
 		addButton.setFont(FontManager.getRunescapeSmallFont());
 		SwingUtil.removeButtonDecorations(addButton);
@@ -552,10 +552,18 @@ public class TaskPanel extends JPanel
 
 		// Change button visibility in edit mode
 		boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
+		CustomRoute routeInEditMode = getRouteInEditMode();
+		boolean taskInEditRoute = routeInEditMode != null && routeInEditMode.contains(task.getStructId());
 		toggleTrack.setVisible(!plugin.isRouteEditMode());
 		toggleIgnore.setVisible(!plugin.isRouteEditMode());
-		addButton.setVisible(plugin.isRouteEditMode() && !editingActiveRoute);
-		deleteButton.setVisible(plugin.isRouteEditMode() && editingActiveRoute);
+		addButton.setVisible(
+				plugin.isRouteEditMode()
+			&& !editingActiveRoute
+			&& !taskInEditRoute);
+		deleteButton.setVisible(
+				plugin.isRouteEditMode()
+			&& (editingActiveRoute
+			|| taskInEditRoute));
 
 		setVisible(meetsFilterCriteria());
 

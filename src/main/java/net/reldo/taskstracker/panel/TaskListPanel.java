@@ -827,7 +827,7 @@ public class TaskListPanel extends JScrollPane
 						CustomItemPanel customPanel = customItemPanels.get(customItemId);
 						if (customPanel == null)
 						{
-							customPanel = new CustomItemPanel(plugin, item); // todo: pass dragAndDropPane to constructor
+							customPanel = new CustomItemPanel(plugin, item, dragAndDropPane);
 							customItemPanels.put(customItemId, customPanel);
 							dragAndDropPane.add(customPanel);
 						}
@@ -939,23 +939,18 @@ public class TaskListPanel extends JScrollPane
 
 			if (panel.getClass().equals(TaskPanel.class))
 			{
-				int endingPosition = dragAndDropPane.getPosition(panel);
-				log.debug("TaskPanel dragged to position {}, updating route and re-indexing.", endingPosition);
 				TaskPanel taskPanel = (TaskPanel) panel;
-				activeRoute.addItem(endingPosition, taskPanel.task.getStructId(), true);
+				String panelType = "TaskPanel";
 
-				taskService.addRouteIndex(activeRoute);
-				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+				moveRouteItemPanel(panel, activeRoute, RouteItem.forTask(taskPanel.task.getStructId()), panelType);
+			}
 
-				// if task was dragged to the top then the list needs to be redrawn otherwise just update the panels
-				if (endingPosition == 0)
-				{
-					redraw();
-				}
-				else
-				{
-					refreshAllPanels();
-				}
+			if (panel.getClass().equals(CustomItemPanel.class))
+			{
+				CustomItemPanel customItemPanel = (CustomItemPanel) panel;
+				String panelType = "CustomItemPanel";
+
+				moveRouteItemPanel(panel, activeRoute, customItemPanel.getRouteItem(), panelType);
 			}
 
 			if (panel.getClass().equals(SectionHeaderPanel.class))
@@ -977,6 +972,26 @@ public class TaskListPanel extends JScrollPane
 				taskService.addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
 				redraw();
+			}
+		}
+
+		private void moveRouteItemPanel(Component panel, CustomRoute activeRoute, RouteItem routeItem, String panelType)
+		{
+			int endingPosition = dragAndDropPane.getPosition(panel);
+			log.debug("{} dragged to position {}, updating route and re-indexing.", panelType, endingPosition);
+			activeRoute.addItem(endingPosition, routeItem, true);
+
+			taskService.addRouteIndex(activeRoute);
+			plugin.getTrackerGlobalConfigStore().addRoute(taskService.getCurrentTaskType().getTaskJsonName(), activeRoute);
+
+			// if panel was dragged to the top then the list needs to be redrawn otherwise just update the panels
+			if (endingPosition == 0)
+			{
+				redraw();
+			}
+			else
+			{
+				refreshAllPanels();
 			}
 		}
 	}

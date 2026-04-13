@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -16,6 +17,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,7 @@ public class SectionHeaderPanel extends JPanel
 	private static final String ARROW_EXPANDED = "\u25BC";
 	private static final String ARROW_COLLAPSED = "\u25B6";
 	private static final String DELETE_ICON = "\uD83D\uDDD1";
+	private static final String EDIT_ICON = "\u270E";
 
 	private final TasksTrackerPlugin plugin;
 	@Getter
@@ -55,6 +59,7 @@ public class SectionHeaderPanel extends JPanel
 	private final JLabel progressLabel;
 	private final String description;
 	private final JButton deleteButton;
+	private final JButton editButton;
 	private final JComponent listPanel;
 
 	@Setter
@@ -88,7 +93,6 @@ public class SectionHeaderPanel extends JPanel
 		// Container for east layout section
 		JPanel eastContainer = new JPanel();
 		eastContainer.setLayout(new BoxLayout(eastContainer, BoxLayout.X_AXIS));
-//		eastContainer.setBackground(BACKGROUND_COLOR);
 		eastContainer.setOpaque(false);
 
 		// Progress label (right side)
@@ -96,14 +100,39 @@ public class SectionHeaderPanel extends JPanel
 		progressLabel.setForeground(PROGRESS_COLOR);
 		progressLabel.setFont(FontManager.getRunescapeSmallFont());
 
+		// Edit button
+		editButton = new JButton(EDIT_ICON);
+		editButton.setBorder(new EmptyBorder(0, 0, 0, 0));
+		editButton.addActionListener(e  -> editSection("Name", sectionName, RouteSection::setName));
+		SwingUtil.removeButtonDecorations(editButton);
+		editButton.setForeground(TEXT_COLOR);
+		editButton.setToolTipText("Edit Name");
+		editButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				editButton.setForeground(ColorScheme.BRAND_ORANGE);
+				container.setBackground(HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				editButton.setForeground(TEXT_COLOR);
+				container.setBackground(BACKGROUND_COLOR);
+			}
+		});
+
 		// Delete button
 		deleteButton = new JButton(DELETE_ICON);
 		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		deleteButton.addActionListener(e  -> {
-			RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionName).actionPerformed(e);
+			RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionId).actionPerformed(e);
 		});
 		SwingUtil.removeButtonDecorations(deleteButton);
 		deleteButton.setForeground(TEXT_COLOR);
+		editButton.setToolTipText("Delete Section");
 		deleteButton.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -122,6 +151,7 @@ public class SectionHeaderPanel extends JPanel
 		});
 
 		eastContainer.add(progressLabel);
+		eastContainer.add(editButton);
 		eastContainer.add(deleteButton);
 
 		boolean editingARoute = plugin.getTaskService().activeRouteInEditMode();
@@ -131,22 +161,7 @@ public class SectionHeaderPanel extends JPanel
 		container.add(titleLabel, BorderLayout.CENTER);
 		container.add(eastContainer, BorderLayout.EAST);
 
-		JPopupMenu popupMenu = new JPopupMenu();
-
-		JMenuItem collapseOthersItem = new JMenuItem("Collapse All Except");
-		collapseOthersItem.addActionListener(e -> {
-			if (collapseCallback != null)
-			{
-				collapseOthersCallback.accept(sectionId);
-			}
-		});
-		popupMenu.add(collapseOthersItem);
-
-		JMenuItem editNameItem = new JMenuItem("Edit Name");
-		editNameItem.addActionListener(e -> renameSection());
-		popupMenu.add(editNameItem);
-
-		container.setComponentPopupMenu(popupMenu);
+		container.setComponentPopupMenu(createTaskPopupMenu());
 
 		add(container, BorderLayout.CENTER);
 
@@ -179,6 +194,74 @@ public class SectionHeaderPanel extends JPanel
 				container.setBackground(BACKGROUND_COLOR);
 			}
 		});
+	}
+
+
+	public JPopupMenu createTaskPopupMenu()
+	{
+		JPopupMenu popupMenu = new JPopupMenu();
+
+		JMenuItem collapseOthersItem = new JMenuItem("Collapse All Except");
+		collapseOthersItem.addActionListener(e -> {
+			if (collapseCallback != null)
+			{
+				collapseOthersCallback.accept(sectionId);
+			}
+		});
+		popupMenu.add(collapseOthersItem);
+
+		JMenuItem routeEditHeader = new JMenuItem("Edit route");
+		routeEditHeader.setEnabled(false);
+		popupMenu.add(routeEditHeader);
+
+		JMenuItem editNameItem = new JMenuItem("Edit Name");
+		editNameItem.addActionListener(e -> editSection("Name", sectionName, RouteSection::setName));
+		popupMenu.add(editNameItem);
+
+		JMenuItem editDescriptionItem = new JMenuItem("Edit Description");
+		editDescriptionItem.addActionListener(e -> editSection("Description", description, RouteSection::setDescription));
+		popupMenu.add(editDescriptionItem);
+
+		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
+		removeTaskFromRoute.addActionListener(e -> {
+			RouteEditActions.removeSectionAction(plugin, plugin.getTaskService().getActiveRoute(), sectionId).actionPerformed(e);
+		});
+		popupMenu.add(removeTaskFromRoute);
+
+		popupMenu.addPopupMenuListener(new PopupMenuListener()
+		{
+
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent)
+			{
+				if (plugin.getTaskService().activeRouteInEditMode())
+				{
+					routeEditHeader.setVisible(true);
+					editNameItem.setVisible(true);
+					editDescriptionItem.setVisible(true);
+					removeTaskFromRoute.setVisible(true);
+				}
+				else
+				{
+					routeEditHeader.setVisible(false);
+					editNameItem.setVisible(false);
+					editDescriptionItem.setVisible(false);
+					removeTaskFromRoute.setVisible(false);
+				}
+			}
+
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent)
+			{
+			}
+
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent popupMenuEvent)
+			{
+			}
+		});
+
+		return popupMenu;
 	}
 
 	public void setProgress(int completed, int total)
@@ -235,24 +318,24 @@ public class SectionHeaderPanel extends JPanel
 		updateTitleText();
 	}
 
-	private void renameSection()
+	private void editSection(String property, String value, BiConsumer<RouteSection, String> action)
 	{
-		JOptionPane optionPane = new JOptionPane("Enter section name:", JOptionPane.INFORMATION_MESSAGE);
-		optionPane.setInitialSelectionValue(sectionName);
+		JOptionPane optionPane = new JOptionPane(property + ":", JOptionPane.INFORMATION_MESSAGE);
+		optionPane.setInitialSelectionValue(value);
 		optionPane.setWantsInput(true);
-		JDialog inputDialog = optionPane.createDialog(this, "Edit Section Name");
+		JDialog inputDialog = optionPane.createDialog(this, "Edit Section " + property);
 		inputDialog.setAlwaysOnTop(true);
 		inputDialog.setVisible(true);
 		Object inputValue = optionPane.getInputValue();
 		if (inputValue != JOptionPane.UNINITIALIZED_VALUE)
 		{
-			String name = inputValue.toString();
+			String inputString = inputValue.toString();
 			CustomRoute activeRoute = plugin.getTaskService().getActiveRoute();
 			RouteSection section = activeRoute.get(sectionId);
-			if (section != null && !name.isEmpty())
+			if (section != null && !inputString.isEmpty())
 			{
-				section.setName(name);
-				sectionName = name;
+				action.accept(section, inputString);
+				value = inputString;
 				updateTitleText();
 				plugin.getTaskService().addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
@@ -266,5 +349,6 @@ public class SectionHeaderPanel extends JPanel
 		boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
 		progressLabel.setVisible(!editingActiveRoute);
 		deleteButton.setVisible(editingActiveRoute);
+		editButton.setVisible(editingActiveRoute);
 	}
 }
