@@ -1,10 +1,13 @@
 package net.reldo.taskstracker;
 
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 
 @ConfigGroup(TasksTrackerPlugin.CONFIG_GROUP_NAME)
@@ -21,6 +24,18 @@ public interface TasksTrackerConfig extends Config
 		position = 0
 	)
 	String generalSettings = "generalSettings";
+
+	@ConfigItem(
+		position = 5,
+		keyName = "hideRouteModeButton",
+		name = "Hide Route Mode Button",
+		description = "Hides the \"Route Mode\" button at the bottom of the plugin panel.",
+		section = generalSettings
+	)
+	default boolean hideRouteModeButton()
+	{
+		return false;
+	}
 
 	@ConfigItem(
 		position = 10,
@@ -47,11 +62,47 @@ public interface TasksTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		position = 40,
+		keyName = "filterPanelCollapsible",
+		name = "Filter Panels Collapsible",
+		description = "Shows button that allows filter panels to be hidden.",
+		section = generalSettings
+	)
+	default boolean filterPanelCollapsible()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 50,
+		keyName = "completeCustomKey",
+		name = "Complete Custom Task",
+		description = "When you press this key you'll complete the current custom task.",
+		section = generalSettings
+	)
+	default Keybind completeCustomKey()
+	{
+		return new Keybind(KeyEvent.VK_SPACE, InputEvent.SHIFT_DOWN_MASK);
+	}
+
+
+	/*=================================================================================================================
+	-- Pinned task settings                                                                                        --
+	=================================================================================================================*/
+
+	@ConfigSection(
+		name = "Pinned Task",
+		description = "Pinned Task settings",
+		position = 1
+	)
+	String pinnedTaskSettings = "pinnedTaskSettings";
+
+	@ConfigItem(
 		position = 30,
 		keyName = "pinnedTaskId",
 		name = "Pinned Task ID",
 		description = "Task ID to pin to top of list.",
-		section = generalSettings,
+		section = pinnedTaskSettings,
 		hidden = true
 	)
 	default Integer pinnedTaskId()
@@ -64,7 +115,7 @@ public interface TasksTrackerConfig extends Config
 		keyName = "showPinnedTask",
 		name = "Always Show Pinned Task",
 		description = "Always show the pinned task regardless of filters.",
-		section = generalSettings
+		section = pinnedTaskSettings
 	)
 	default boolean showPinnedTask()
 	{
@@ -76,7 +127,7 @@ public interface TasksTrackerConfig extends Config
 		keyName = "unpinUponCompletion",
 		name = "Unpin Tasks Upon Completion",
 		description = "Configures whether completed tasks should also be automatically unpinned when the task is completed.",
-		section = generalSettings
+		section = pinnedTaskSettings
 	)
 	default boolean unpinUponCompletion()
 	{
@@ -84,17 +135,28 @@ public interface TasksTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 40,
-		keyName = "filterPanelCollapsible",
-		name = "Filter Panels Collapsible",
-		description = "Shows button that allows filter panels to be hidden.",
-		section = generalSettings
+		position = 33,
+		keyName = "showRandomTaskButton",
+		name = "Random Task Button",
+		description = "Shows the random task picker button when not in route mode.",
+		section = pinnedTaskSettings
 	)
-	default boolean filterPanelCollapsible()
+	default boolean showRandomTaskButton()
 	{
-		return true;
+		return false;
 	}
 
+	@ConfigItem(
+		position = 34,
+		keyName = "randomTaskKey",
+		name = "Pin Random Task",
+		description = "Pins a random task from the visible list.",
+		section = pinnedTaskSettings
+	)
+	default Keybind randomTaskKey()
+	{
+		return new Keybind(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK);
+	}
 
 	/*=================================================================================================================
 	-- Overlay Panel settings                                                                                        --
@@ -103,7 +165,7 @@ public interface TasksTrackerConfig extends Config
 	@ConfigSection(
 		name = "Overlay",
 		description = "Overlay settings",
-		position = 1
+		position = 2
 	)
 	String overlaySettings = "overlaySettings";
 
@@ -175,6 +237,18 @@ public interface TasksTrackerConfig extends Config
 		section = overlaySettings
 	)
 	default boolean addTaskNote()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 15,
+		keyName = "useShortestPath",
+		name = "Shortest Path GPS",
+		description = "Navigate to the current task using the Shortest Path plugin. Requires the overlay to be enabled.",
+		section = overlaySettings
+	)
+	default boolean useShortestPath()
 	{
 		return true;
 	}

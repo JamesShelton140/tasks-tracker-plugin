@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import javax.swing.BoxLayout;
@@ -33,6 +34,7 @@ import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.components.SectionHeaderPanel;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.DragAndDropReorderPane;
 
@@ -207,8 +209,8 @@ public class TaskListPanel extends JScrollPane
 			refreshTaskPanel(panel);
 		}
 
-		if (getCurrentTaskListListPanel().getComponentZOrder(panel) <=
-			getCurrentTaskListListPanel().getComponentZOrder(priorityTaskPanel))
+		if (getCurrentTaskListListPanel().getListPanelPosition(panel) <=
+			getCurrentTaskListListPanel().getListPanelPosition(priorityTaskPanel))
 		{
 			if (delayPriorityTaskRefresh)
 			{
@@ -429,19 +431,56 @@ public class TaskListPanel extends JScrollPane
 	{
 		forceUpdatePriorityTaskFlag = false;
 
-		Optional<TaskPanel> optionalTaskPanel = taskPanels.stream().filter(Component::isVisible).
-			min((panel1, panel2) ->
-				Integer.compare(getCurrentTaskListListPanel().getListPanelPosition(panel1),
-					getCurrentTaskListListPanel().getListPanelPosition(panel2)));
+		boolean routeModeActive = plugin.isRouteMode();
+
+		Optional<TaskPanel> optionalTaskPanel = taskPanels.stream()
+			.filter(Component::isVisible)
+			.filter(panel -> !routeModeActive || !panel.task.isCompleted())
+			.min((panel1, panel2) -> Integer.compare(
+				getCurrentTaskListListPanel().getListPanelPosition(panel1),
+				getCurrentTaskListListPanel().getListPanelPosition(panel2)));
 		priorityTaskPanel = optionalTaskPanel.orElse(null);
 
 		Optional<CustomItemPanel> optionalCustomPanel = customItemPanels.values().stream()
 			.filter(Component::isVisible)
 			.filter(p -> !p.isCompleted())
 			.min((p1, p2) -> Integer.compare(
-				getCurrentTaskListListPanel().getComponentZOrder(p1),
-				getCurrentTaskListListPanel().getComponentZOrder(p2)));
+				getCurrentTaskListListPanel().getListPanelPosition(p1),
+				getCurrentTaskListListPanel().getListPanelPosition(p2)));
 		priorityCustomItemPanel = optionalCustomPanel.orElse(null);
+
+		plugin.getShortestPathService().setGpsTarget(getGpsTargetLocation());
+	}
+
+	private WorldPoint getGpsTargetLocation()
+	{
+		JComponent priority = getPriorityPanel();
+		if (priority instanceof CustomItemPanel)
+		{
+			return ((CustomItemPanel) priority).getWorldLocation();
+		}
+		if (priority instanceof TaskPanel)
+		{
+			TaskPanel taskPanel = (TaskPanel) priority;
+			ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
+			CustomRoute activeRoute = taskService.getActiveRoute(currentTab);
+			if (activeRoute != null)
+			{
+				WorldPoint routeLocation = activeRoute.getFlattenedItems().stream()
+					.filter(item -> item.isTask() && taskPanel.task.getStructId().equals(item.getTaskId()))
+					.map(RouteItem::getLocation)
+					.filter(java.util.Objects::nonNull)
+					.findFirst()
+					.orElse(null);
+				if (routeLocation != null)
+				{
+					return routeLocation;
+				}
+			}
+			// Fall back to store location (single-location tasks)
+			return taskPanel.task.getTaskDefinition().getLocation();
+		}
+		return null;
 	}
 
 	/**
@@ -463,9 +502,61 @@ public class TaskListPanel extends JScrollPane
 			return priorityTaskPanel;
 		}
 
-		int taskZ = getCurrentTaskListListPanel().getComponentZOrder(priorityTaskPanel);
-		int customZ = getCurrentTaskListListPanel().getComponentZOrder(priorityCustomItemPanel);
+		int taskZ = getCurrentTaskListListPanel().getListPanelPosition(priorityTaskPanel);
+		int customZ = getCurrentTaskListListPanel().getListPanelPosition(priorityCustomItemPanel);
 		return taskZ < customZ ? priorityTaskPanel : priorityCustomItemPanel;
+	}
+
+	public void collapseAllSections()
+	{
+		setAllSectionsCollapseState(true);
+	}
+
+	public void expandAllSections()
+	{
+		setAllSectionsCollapseState(false);
+	}
+
+	public void setAllSectionsCollapseState(boolean collapsed)
+	{
+		getActiveSectionHeaderPanels().ifPresent(headerPanels -> {
+			headerPanels.values().forEach(headerPanel -> headerPanel.setCollapsedSilent(collapsed));
+			refreshAllPanels();
+		});
+	}
+
+	public void collapseAllExcept(String sectionId)
+	{
+		getActiveSectionHeaderPanels().ifPresent(headerPanels -> {
+			headerPanels.values()
+			.forEach(headerPanel -> headerPanel.setCollapsedSilent(!Objects.equals(headerPanel.getSectionId(), sectionId)));
+			refreshAllPanels();
+		});
+	}
+
+	public Optional<Map<String, SectionHeaderPanel>> getActiveSectionHeaderPanels()
+	{
+		CustomRoute activeRoute = taskService.getActiveRoute();
+		if (activeRoute == null)
+		{
+			return Optional.empty();
+		}
+		if (sectionHeaderPanels == null)
+		{
+			return Optional.empty();
+		}
+
+		return Optional.of(sectionHeaderPanels.get(activeRoute.getId()));
+	}
+
+	public void completeCurrentCustomTask()
+	{
+		JComponent priorityPanel = getPriorityPanel();
+		if (priorityPanel != null && priorityPanel.getClass().equals(CustomItemPanel.class))
+		{
+			CustomItemPanel priorityCustomPanel = (CustomItemPanel) priorityPanel;
+			priorityCustomPanel.setCompleted(true);
+		}
 	}
 
 	public String getEmptyTaskListMessage()
@@ -506,6 +597,23 @@ public class TaskListPanel extends JScrollPane
 		}
 
 		return ids;
+	}
+
+	public void pinRandomTask()
+	{
+		if (plugin.isRouteMode())
+		{
+			return;
+		}
+
+		List<TaskPanel> visibleTasks = taskPanelsByStructId.values().stream()
+			.filter(Component::isVisible)
+			.collect(Collectors.toList());
+		int randomIndex = ThreadLocalRandom.current().nextInt(visibleTasks.size());
+		int randomTaskId = visibleTasks.get(randomIndex).task.getStructId();
+
+		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", randomTaskId);
+		SwingUtilities.invokeLater(plugin::redrawTaskList);
 	}
 
 	private class TaskListListPanel extends FixedWidthPanel
@@ -682,6 +790,9 @@ public class TaskListPanel extends JScrollPane
 					}
 					header.setCollapseCallback(collapsed -> {
 						SwingUtilities.invokeLater(TaskListPanel.this::refreshAllPanels);
+					});
+					header.setCollapseOthersCallback(sectionId -> {
+						SwingUtilities.invokeLater(() -> collapseAllExcept(sectionId));
 					});
 					header.setVisible(true);
 

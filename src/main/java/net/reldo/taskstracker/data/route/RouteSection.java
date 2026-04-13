@@ -139,11 +139,11 @@ public class RouteSection
 
 	public boolean removeCustomItem(String customItemId)
 	{
-		if (items == null)
+		if (getItems() == null)
 		{
 			return false;
 		}
-		return items.removeIf(item ->
+		return getItems().removeIf(item ->
 			!item.isTask()
 			&& item.getCustomItem() != null
 			&& customItemId.equals(item.getCustomItem().getId()));
@@ -155,7 +155,9 @@ public class RouteSection
 		{
 			return false;
 		}
-		return getItems().removeIf(item -> item.isTask() && item.getTaskId().equals(taskId));
+		return getItems().removeIf(item ->
+			item.isTask()
+				&& taskId.equals(item.getTaskId()));
 	}
 
 	public boolean remove(String customId)

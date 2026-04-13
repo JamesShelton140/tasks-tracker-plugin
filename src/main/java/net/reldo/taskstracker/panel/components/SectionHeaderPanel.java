@@ -59,6 +59,8 @@ public class SectionHeaderPanel extends JPanel
 
 	@Setter
 	private Consumer<Boolean> collapseCallback;
+	@Setter
+	private Consumer<String> collapseOthersCallback;
 
 	public SectionHeaderPanel(TasksTrackerPlugin plugin, String sectionId, String sectionName, String description, JComponent listPanel)
 	{
@@ -131,6 +133,15 @@ public class SectionHeaderPanel extends JPanel
 
 		JPopupMenu popupMenu = new JPopupMenu();
 
+		JMenuItem collapseOthersItem = new JMenuItem("Collapse All Except");
+		collapseOthersItem.addActionListener(e -> {
+			if (collapseCallback != null)
+			{
+				collapseOthersCallback.accept(sectionId);
+			}
+		});
+		popupMenu.add(collapseOthersItem);
+
 		JMenuItem editNameItem = new JMenuItem("Edit Name");
 		editNameItem.addActionListener(e -> renameSection());
 		popupMenu.add(editNameItem);
@@ -148,7 +159,7 @@ public class SectionHeaderPanel extends JPanel
 		container.addMouseListener(new MouseAdapter()
 		{
 			@Override
-			public void mouseClicked(MouseEvent e)
+			public void mousePressed(MouseEvent e)
 			{
 				if (e.getButton() == MouseEvent.BUTTON1)
 				{
@@ -186,13 +197,7 @@ public class SectionHeaderPanel extends JPanel
 
 	private void toggleCollapse()
 	{
-		collapsed = !collapsed;
-		updateTitleText();
-
-		if (collapseCallback != null)
-		{
-			collapseCallback.accept(collapsed);
-		}
+		setCollapsed(!collapsed);
 	}
 
 	private void updateTitleText()
@@ -209,6 +214,16 @@ public class SectionHeaderPanel extends JPanel
 
 		html.append("</html>");
 		titleLabel.setText(html.toString());
+	}
+
+	public void setCollapsed(boolean collapsed)
+	{
+		this.collapsed = collapsed;
+		updateTitleText();
+		if (collapseCallback != null)
+		{
+			collapseCallback.accept(collapsed);
+		}
 	}
 
 	/**
