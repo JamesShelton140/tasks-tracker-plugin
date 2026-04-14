@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -429,6 +430,11 @@ public class TaskService
 	 */
 	public void setActiveRoute(ConfigValues.TaskListTabs tab, CustomRoute route)
 	{
+		if (!Objects.equals(route, getActiveRoute()))
+		{
+			exitEditModeIfRouteClosed(tab);
+		}
+
 		if (route == null)
 		{
 			tabActiveRoutes.remove(tab);
@@ -469,12 +475,34 @@ public class TaskService
 		setActiveRoute(tab, null);
 	}
 
+	public void exitEditModeIfRouteClosed(ConfigValues.TaskListTabs tab)
+	{
+		// Exit edit mode if this was the only tab with that route
+		if (activeRouteInEditMode(tab))
+		{
+			TasksTrackerConfig config = configManager.getConfig(TasksTrackerConfig.class);
+			tabActiveRoutes.entrySet().stream()
+				.filter(entry ->
+					entry.getKey() != tab
+						&& entry.getValue() != null
+						&& entry.getValue().getId().equals(config.routeInEditMode()))
+				.findFirst()
+				.ifPresent(entry -> configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", ""));
+		}
+	}
+
 	/** Returns true if a route is currently active for the selected tab and is in edit mode. */
 	public boolean activeRouteInEditMode()
 	{
+		ConfigValues.TaskListTabs tab = configManager.getConfig(TasksTrackerConfig.class).taskListTab();
+		return activeRouteInEditMode(tab);
+	}
+
+	/** Returns true if a route is currently active for the selected tab and is in edit mode. */
+	public boolean activeRouteInEditMode(ConfigValues.TaskListTabs tab)
+	{
 		TasksTrackerConfig config = configManager.getConfig(TasksTrackerConfig.class);
-		ConfigValues.TaskListTabs tab = config.taskListTab();
-		CustomRoute activeRoute = getActiveRoute();
+		CustomRoute activeRoute = getActiveRoute(tab);
 		if (activeRoute == null)
 		{
 			return false;

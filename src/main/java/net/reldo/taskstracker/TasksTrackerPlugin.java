@@ -229,6 +229,7 @@ public class TasksTrackerPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", "");
 		shortestPathService.clearGps();
 		pluginPanel.saveCurrentTabFilters();
 		pluginPanel.hideLoggedInPanel();

@@ -103,7 +103,7 @@ public class SectionHeaderPanel extends JPanel
 		// Edit button
 		editButton = new JButton(EDIT_ICON);
 		editButton.setBorder(new EmptyBorder(0, 0, 0, 0));
-		editButton.addActionListener(e  -> editSection("Name", sectionName, RouteSection::setName));
+		editButton.addActionListener(e  -> editSection("Name", sectionName, false, RouteSection::setName));
 		SwingUtil.removeButtonDecorations(editButton);
 		editButton.setForeground(TEXT_COLOR);
 		editButton.setToolTipText("Edit Name");
@@ -215,7 +215,7 @@ public class SectionHeaderPanel extends JPanel
 		popupMenu.add(routeEditHeader);
 
 		JMenuItem editNameItem = new JMenuItem("Edit Name");
-		editNameItem.addActionListener(e -> editSection("Name", sectionName,
+		editNameItem.addActionListener(e -> editSection("Name", sectionName, false,
 			(section, name) ->
 			{
 				sectionName = name;
@@ -224,7 +224,7 @@ public class SectionHeaderPanel extends JPanel
 		popupMenu.add(editNameItem);
 
 		JMenuItem editDescriptionItem = new JMenuItem("Edit Description");
-		editDescriptionItem.addActionListener(e -> editSection("Description", description,
+		editDescriptionItem.addActionListener(e -> editSection("Description", description, true,
 			(section, desc) ->
 			{
 				description = desc;
@@ -328,9 +328,9 @@ public class SectionHeaderPanel extends JPanel
 		updateTitleText();
 	}
 
-	private void editSection(String property, String value, BiConsumer<RouteSection, String> action)
+	private void editSection(String property, String value, boolean allowEmpty, BiConsumer<RouteSection, String> action)
 	{
-		JOptionPane optionPane = new JOptionPane(property + ":", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane optionPane = new JOptionPane(property + ":", JOptionPane.INFORMATION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 		optionPane.setInitialSelectionValue(value);
 		optionPane.setWantsInput(true);
 		JDialog inputDialog = optionPane.createDialog(this, "Edit Section " + property);
@@ -342,11 +342,12 @@ public class SectionHeaderPanel extends JPanel
 			String inputString = inputValue.toString();
 			CustomRoute activeRoute = plugin.getTaskService().getActiveRoute();
 			RouteSection section = activeRoute.get(sectionId);
-			if (section != null && !inputString.isEmpty())
+			if (section != null
+				&& (allowEmpty || !inputString.isEmpty()))
 			{
+				log.info("Setting section {} - {} to {}", sectionName, property, inputString);
 				action.accept(section, inputString);
 				updateTitleText();
-				plugin.getTaskService().addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
 				plugin.refreshAllPanels();
 			}
