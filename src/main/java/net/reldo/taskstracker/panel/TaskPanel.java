@@ -511,61 +511,60 @@ public class TaskPanel extends JPanel
 		}
 
 		TaskService taskService = plugin.getTaskService();
-		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
-		return plugin.getTrackerGlobalConfigStore().loadRoutes(taskType).stream()
-			.filter(filterRoute -> filterRoute.getId().equals(plugin.getConfig().routeInEditMode()))
-			.findFirst()
-			.orElse(null);
+		return taskService.getRouteInEditMode();
 	}
 
 	public void refresh()
 	{
-		boolean isRouteMode = plugin.isRouteMode();
-		if (!isRouteMode && plugin.getConfig().pinnedTaskId().equals(task.getStructId()))
-		{
-			highlightContainer.setBorder(new LineBorder(ColorScheme.BRAND_ORANGE));
-		}
-		else
-		{
-			highlightContainer.setBorder(new EmptyBorder(0, 0, 0, 0));
-		}
-		setBackgroundColor(getTaskBackgroundColor());
-		name.setText(HtmlUtil.wrapWithHtml(task.getName()));
-		description.setText(HtmlUtil.wrapWithHtml(task.getDescription()));
-
-		// If completed tasks are auto-untracked, don't allow users to add them to tracked tasks, that's silly.
-		boolean disableTrack = plugin.getConfig().untrackUponCompletion() && task.isCompleted();
-		toggleTrack.setEnabled(!disableTrack);
-
-		// Tell the user why it's greyed out
-		if (disableTrack)
-		{
-			toggleTrack.setToolTipText("Completed tasks cannot be tracked while 'Untrack Tasks Upon Completion' is enabled.");
-		}
-		else
-		{
-			toggleTrack.setToolTipText(null);
-		}
-
-		toggleTrack.setSelected(task.isTracked());
-		toggleIgnore.setSelected(task.isIgnored());
-
-		// Change button visibility in edit mode
-		boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
-		CustomRoute routeInEditMode = getRouteInEditMode();
-		boolean taskInEditRoute = routeInEditMode != null && routeInEditMode.contains(task.getStructId());
-		toggleTrack.setVisible(!plugin.isRouteEditMode());
-		toggleIgnore.setVisible(!plugin.isRouteEditMode());
-		addButton.setVisible(
-				plugin.isRouteEditMode()
-			&& !editingActiveRoute
-			&& !taskInEditRoute);
-		deleteButton.setVisible(
-				plugin.isRouteEditMode()
-			&& (editingActiveRoute
-			|| taskInEditRoute));
-
 		setVisible(meetsFilterCriteria());
+
+		if (isVisible())
+		{
+			boolean isRouteMode = plugin.isRouteMode();
+			if (!isRouteMode && plugin.getConfig().pinnedTaskId().equals(task.getStructId()))
+			{
+				highlightContainer.setBorder(new LineBorder(ColorScheme.BRAND_ORANGE));
+			}
+			else
+			{
+				highlightContainer.setBorder(new EmptyBorder(0, 0, 0, 0));
+			}
+			setBackgroundColor(getTaskBackgroundColor());
+			name.setText(HtmlUtil.wrapWithHtml(task.getName()));
+			description.setText(HtmlUtil.wrapWithHtml(task.getDescription()));
+
+			// If completed tasks are auto-untracked, don't allow users to add them to tracked tasks, that's silly.
+			boolean disableTrack = plugin.getConfig().untrackUponCompletion() && task.isCompleted();
+			toggleTrack.setEnabled(!disableTrack);
+
+			// Tell the user why it's greyed out
+			if (disableTrack)
+			{
+				toggleTrack.setToolTipText("Completed tasks cannot be tracked while 'Untrack Tasks Upon Completion' is enabled.");
+			}
+			else
+			{
+				toggleTrack.setToolTipText(null);
+			}
+
+			toggleTrack.setSelected(task.isTracked());
+			toggleIgnore.setSelected(task.isIgnored());
+
+			// Change button visibility in edit mode
+			boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
+			CustomRoute routeInEditMode = getRouteInEditMode();
+			boolean taskInEditRoute = routeInEditMode != null && routeInEditMode.contains(task.getStructId());
+			toggleTrack.setVisible(!plugin.isRouteEditMode());
+			toggleIgnore.setVisible(!plugin.isRouteEditMode());
+			addButton.setVisible(
+				plugin.isRouteEditMode()
+					&& !editingActiveRoute
+					&& !taskInEditRoute);
+			deleteButton.setVisible(
+				plugin.isRouteEditMode()
+					&& (editingActiveRoute
+					|| taskInEditRoute));
+		}
 
 		revalidate();
 	}

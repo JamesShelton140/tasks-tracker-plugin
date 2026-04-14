@@ -60,11 +60,8 @@ public class TaskListPanel extends JScrollPane
 	/** Section header panels keyed by route id then section id */
 	private final HashMap<String, HashMap<String, SectionHeaderPanel>> sectionHeaderPanels = new HashMap<>();
 
-	/** Custom item panels keyed by custom item ID */
-	private final HashMap<String, CustomItemPanel> customItemPanels = new HashMap<>();
-
-	/** Tracks which route's custom items are currently cached */
-	private String cachedCustomItemRouteId = null;
+	/** Custom item panels keyed by route id then custom item ID */
+	private final HashMap<String, HashMap<String, CustomItemPanel>> customItemPanels = new HashMap<>();
 
 	public TaskListPanel(TasksTrackerPlugin plugin, TaskService taskService)
 	{
@@ -287,9 +284,13 @@ public class TaskListPanel extends JScrollPane
 				Set<String> completedIds = plugin.getTrackerGlobalConfigStore()
 					.loadCustomItemCompletion(taskType, activeRoute.getId());
 
-				for (CustomItemPanel panel : customItemPanels.values())
+				HashMap<String, CustomItemPanel> customPanels = customItemPanels.get(activeRoute.getId());
+				if (customPanels != null)
 				{
-					refreshCustomItemPanel(panel, activeRoute);
+					for (CustomItemPanel panel : customPanels.values())
+					{
+						refreshCustomItemPanel(panel, activeRoute);
+					}
 				}
 
 				// Count section progress (tasks + custom items) // todo move this to section header panel refresh
@@ -441,13 +442,21 @@ public class TaskListPanel extends JScrollPane
 				getCurrentTaskListListPanel().getListPanelPosition(panel2)));
 		priorityTaskPanel = optionalTaskPanel.orElse(null);
 
-		Optional<CustomItemPanel> optionalCustomPanel = customItemPanels.values().stream()
-			.filter(Component::isVisible)
-			.filter(p -> !p.isCompleted())
-			.min((p1, p2) -> Integer.compare(
-				getCurrentTaskListListPanel().getListPanelPosition(p1),
-				getCurrentTaskListListPanel().getListPanelPosition(p2)));
-		priorityCustomItemPanel = optionalCustomPanel.orElse(null);
+		CustomRoute activeRoute = taskService.getActiveRoute();
+		if (activeRoute != null)
+		{
+			HashMap<String, CustomItemPanel> customPanels = customItemPanels.get(activeRoute.getId());
+			if (customPanels != null)
+			{
+				Optional<CustomItemPanel> optionalCustomPanel = customPanels.values().stream()
+					.filter(Component::isVisible)
+					.filter(p -> !p.isCompleted())
+					.min((p1, p2) -> Integer.compare(
+						getCurrentTaskListListPanel().getListPanelPosition(p1),
+						getCurrentTaskListListPanel().getListPanelPosition(p2)));
+				priorityCustomItemPanel = optionalCustomPanel.orElse(null);
+			}
+		}
 
 		plugin.getShortestPathService().setGpsTarget(getGpsTargetLocation());
 	}
@@ -658,7 +667,6 @@ public class TaskListPanel extends JScrollPane
 				priorityCustomItemPanel = null;
 				sectionHeaderPanels.clear();
 				customItemPanels.clear();
-				cachedCustomItemRouteId = null;
 
 				List<TaskFromStruct> tasks = taskService.getTasks();
 				if (tasks == null || tasks.isEmpty())
@@ -704,26 +712,13 @@ public class TaskListPanel extends JScrollPane
 					return;
 				}
 
-				// Check if route changed - clean up stale custom item panels -todo cache custom items per task type
-				ConfigValues.TaskListTabs currentTab = plugin.getConfig().taskListTab();
-				CustomRoute currentRoute = taskService.getActiveRoute(currentTab);
-				String currentRouteId = currentRoute != null ? currentRoute.getId() : null;
-
-				if (!Objects.equals(currentRouteId, cachedCustomItemRouteId))
-				{
-					for (CustomItemPanel panel : customItemPanels.values())
-					{
-						dragAndDropPane.remove(panel);
-					}
-					customItemPanels.clear();
-					cachedCustomItemRouteId = currentRouteId;
-				}
-
 				// Hide all section headers and custom item panels before redraw
 				sectionHeaderPanels.values()
 					.forEach(sectionPanels -> sectionPanels.values()
 						.forEach(sectionHeaderPanel -> sectionHeaderPanel.setVisible(false)));
-				customItemPanels.values().forEach(p -> p.setVisible(false));
+				customItemPanels.values()
+					.forEach(customPanels -> customPanels.values()
+						.forEach(customItemPanel -> customItemPanel.setVisible(false)));
 
 				redrawListItems();
 
@@ -785,7 +780,7 @@ public class TaskListPanel extends JScrollPane
 					if (header == null)
 					{
 						header = new SectionHeaderPanel(plugin, sectionKey, section.getName(), section.getDescription(), dragAndDropPane);
-						sectionHeaderPanels.get(activeRoute.getId()).put(sectionKey, header);
+						routeHeaders.put(sectionKey, header);
 						dragAndDropPane.add(header);
 					}
 					header.setCollapseCallback(collapsed -> {
@@ -807,11 +802,13 @@ public class TaskListPanel extends JScrollPane
 			// Set custom item panel positions
 			if (hasActiveRoute)
 			{
+				customItemPanels.computeIfAbsent(activeRoute.getId(), k -> new HashMap<>());
 				priorityCustomItemPanel = null;
 				String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 				Set<String> completedIds = plugin.getTrackerGlobalConfigStore()
 					.loadCustomItemCompletion(taskType, activeRoute.getId());
 
+				HashMap<String, CustomItemPanel> customPanels = customItemPanels.get(activeRoute.getId());
 				for (RouteSection section : activeRoute.getSections())
 				{
 					for (RouteItem item : section.getItems())
@@ -824,11 +821,11 @@ public class TaskListPanel extends JScrollPane
 						CustomRouteItem customItem = item.getCustomItem();
 						String customItemId = customItem.getId();
 
-						CustomItemPanel customPanel = customItemPanels.get(customItemId);
+						CustomItemPanel customPanel = customPanels.get(customItemId);
 						if (customPanel == null)
 						{
 							customPanel = new CustomItemPanel(plugin, item, dragAndDropPane);
-							customItemPanels.put(customItemId, customPanel);
+							customPanels.put(customItemId, customPanel);
 							dragAndDropPane.add(customPanel);
 						}
 						customPanel.setCompleted(completedIds.contains(customItemId));

@@ -483,6 +483,18 @@ public class TaskService
 		return config.routeInEditMode().equals(activeRoute.getId());
 	}
 
+	/** Returns the route currently being edited. Null if no route is being edited. */
+	public CustomRoute getRouteInEditMode()
+	{
+		TasksTrackerConfig config = configManager.getConfig(TasksTrackerConfig.class);
+		CustomRoute routeInEditMode = tabActiveRoutes.values().stream()
+			.filter(route -> route.getId().equals(config.routeInEditMode()))
+			.findFirst()
+			.orElse(null);
+
+		return routeInEditMode;
+	}
+
 	/** Finds a task by its struct ID. Returns null if not found. */
 	public TaskFromStruct getTaskByStructId(Integer taskStructId)
 	{

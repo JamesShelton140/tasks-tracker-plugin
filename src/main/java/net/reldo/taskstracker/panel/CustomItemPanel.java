@@ -137,6 +137,8 @@ public class CustomItemPanel extends JPanel
 		container.add(body, BorderLayout.CENTER);
 		container.add(rightPanel, BorderLayout.EAST);
 
+		container.setComponentPopupMenu(createPopupMenu());
+
 		add(container, BorderLayout.NORTH);
 
 		ToolTipManager.sharedInstance().registerComponent(this);
@@ -195,7 +197,7 @@ public class CustomItemPanel extends JPanel
 		});
 	}
 
-	public JPopupMenu createTaskPopupMenu()
+	public JPopupMenu createPopupMenu()
 	{
 		JPopupMenu popupMenu = new JPopupMenu();
 
@@ -229,19 +231,19 @@ public class CustomItemPanel extends JPanel
 			{
 				if (plugin.getTaskService().activeRouteInEditMode())
 				{
-					routeEditHeader.setVisible(true);
-					editNameItem.setVisible(true);
-					editDescriptionItem.setVisible(true);
-					editNoteItem.setVisible(true);
-					removeTaskFromRoute.setVisible(true);
+//					routeEditHeader.setEnabled(true);
+					editNameItem.setEnabled(true);
+					editDescriptionItem.setEnabled(true);
+					editNoteItem.setEnabled(true);
+					removeTaskFromRoute.setEnabled(true);
 				}
 				else
 				{
-					routeEditHeader.setVisible(false);
-					editNameItem.setVisible(false);
-					editDescriptionItem.setVisible(false);
-					editNoteItem.setVisible(false);
-					removeTaskFromRoute.setVisible(false);
+//					routeEditHeader.setEnabled(false);
+					editNameItem.setEnabled(false);
+					editDescriptionItem.setEnabled(false);
+					editNoteItem.setEnabled(false);
+					removeTaskFromRoute.setEnabled(false);
 				}
 			}
 

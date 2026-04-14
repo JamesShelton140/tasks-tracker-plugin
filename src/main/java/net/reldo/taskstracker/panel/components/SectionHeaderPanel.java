@@ -50,6 +50,7 @@ public class SectionHeaderPanel extends JPanel
 	private final String sectionId;
 	@Getter
 	private String sectionName;
+	private String description;
 
 	@Getter
 	private boolean collapsed = false;
@@ -57,7 +58,6 @@ public class SectionHeaderPanel extends JPanel
 	private final JPanel container;
 	private final JLabel titleLabel;
 	private final JLabel progressLabel;
-	private final String description;
 	private final JButton deleteButton;
 	private final JButton editButton;
 	private final JComponent listPanel;
@@ -161,7 +161,7 @@ public class SectionHeaderPanel extends JPanel
 		container.add(titleLabel, BorderLayout.CENTER);
 		container.add(eastContainer, BorderLayout.EAST);
 
-		container.setComponentPopupMenu(createTaskPopupMenu());
+		container.setComponentPopupMenu(createPopupMenu());
 
 		add(container, BorderLayout.CENTER);
 
@@ -197,7 +197,7 @@ public class SectionHeaderPanel extends JPanel
 	}
 
 
-	public JPopupMenu createTaskPopupMenu()
+	public JPopupMenu createPopupMenu()
 	{
 		JPopupMenu popupMenu = new JPopupMenu();
 
@@ -215,11 +215,21 @@ public class SectionHeaderPanel extends JPanel
 		popupMenu.add(routeEditHeader);
 
 		JMenuItem editNameItem = new JMenuItem("Edit Name");
-		editNameItem.addActionListener(e -> editSection("Name", sectionName, RouteSection::setName));
+		editNameItem.addActionListener(e -> editSection("Name", sectionName,
+			(section, name) ->
+			{
+				sectionName = name;
+				section.setName(name);
+			}));
 		popupMenu.add(editNameItem);
 
 		JMenuItem editDescriptionItem = new JMenuItem("Edit Description");
-		editDescriptionItem.addActionListener(e -> editSection("Description", description, RouteSection::setDescription));
+		editDescriptionItem.addActionListener(e -> editSection("Description", description,
+			(section, desc) ->
+			{
+				description = desc;
+				section.setDescription(desc);
+			}));
 		popupMenu.add(editDescriptionItem);
 
 		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
@@ -335,7 +345,6 @@ public class SectionHeaderPanel extends JPanel
 			if (section != null && !inputString.isEmpty())
 			{
 				action.accept(section, inputString);
-				value = inputString;
 				updateTitleText();
 				plugin.getTaskService().addRouteIndex(activeRoute);
 				plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
