@@ -13,12 +13,12 @@ import okhttp3.Response;
 @Slf4j
 public class HttpDataStoreReader implements DataStoreReader
 {
-	private OkHttpClient okHttpClient;
-
+	private final OkHttpClient okHttpClient;
+	
 	@Inject
-	public void setOkHttpClient(OkHttpClient okHttpClient)
+	public HttpDataStoreReader(OkHttpClient okHttpClient)
 	{
-		this.okHttpClient = okHttpClient.newBuilder().cache(null).build();
+	    this.okHttpClient = okHttpClient.newBuilder().cache(null).build();
 	}
 
 	@Override
