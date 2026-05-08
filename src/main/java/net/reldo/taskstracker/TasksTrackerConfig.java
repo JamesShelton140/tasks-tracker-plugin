@@ -75,14 +75,14 @@ public interface TasksTrackerConfig extends Config
 
 	@ConfigItem(
 		position = 50,
-		keyName = "completeCustomKey",
+		keyName = "completeCustomTaskKey",
 		name = "Complete Custom Task",
 		description = "When you press this key you'll complete the current custom task.",
 		section = generalSettings
 	)
 	default Keybind completeCustomKey()
 	{
-		return new Keybind(KeyEvent.VK_SPACE, InputEvent.SHIFT_DOWN_MASK);
+		return Keybind.NOT_SET;
 	}
 
 
