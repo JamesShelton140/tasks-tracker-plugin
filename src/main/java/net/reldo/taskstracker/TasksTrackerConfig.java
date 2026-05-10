@@ -75,7 +75,7 @@ public interface TasksTrackerConfig extends Config
 
 	@ConfigItem(
 		position = 50,
-		keyName = "completeCustomKey",
+		keyName = "completeCustomTaskKey",
 		name = "Complete Custom Task",
 		description = "When you press this key you'll complete the current custom task.",
 		section = generalSettings

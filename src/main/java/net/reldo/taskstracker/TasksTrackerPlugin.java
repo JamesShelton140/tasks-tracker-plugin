@@ -589,7 +589,7 @@ public class TasksTrackerPlugin extends Plugin
 		}
 		catch (Exception ex)
 		{
-			this.showMessageBox("Import Tasks Error", "There was an issue importing task tracker data. " + ex.getMessage(), JOptionPane.ERROR_MESSAGE, false);
+			this.showMessageBox("Import Tasks Error", "There was an issue importing task tracker data. " + ex.getMessage(), JOptionPane.ERROR_MESSAGE);
 			log.error("There was an issue importing task tracker data.", ex);
 			log.debug("reldoImport json: {}", clipboard);
 			return;
@@ -597,7 +597,7 @@ public class TasksTrackerPlugin extends Plugin
 
 		if (reldoImport.taskTypeName == null || !reldoImport.taskTypeName.equalsIgnoreCase(config.taskTypeJsonName()))
 		{
-			this.showMessageBox("Import Tasks Error", "Wrong task type. Ensure selected task type and data field match before importing data.", JOptionPane.ERROR_MESSAGE, false);
+			this.showMessageBox("Import Tasks Error", "Wrong task type. Ensure selected task type and data field match before importing data.", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -704,7 +704,7 @@ public class TasksTrackerPlugin extends Plugin
 			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
 
 			String message = "Copied " + taskService.getCurrentTaskType().getName() + " data to clipboard!";
-			showMessageBox("Data Exported!", message, JOptionPane.INFORMATION_MESSAGE, true);
+			showMessageBox("Data Exported!", message, JOptionPane.INFORMATION_MESSAGE);
 		});
 	}
 
@@ -858,37 +858,13 @@ public class TasksTrackerPlugin extends Plugin
 		}
 	}
 
-	private void showMessageBox(final String title, final String message, int messageType, boolean showOpenLeagueTools)
+	private void showMessageBox(final String title, final String message, int messageType)
 	{
 		SwingUtilities.invokeLater(() -> {
-			JOptionPane optionPane;
-			JDialog dialog;
-
-			if (showOpenLeagueTools)
-			{
-				String[] options = {"Open OS League Tools", "Ok"};
-
-				optionPane = new JOptionPane(message, messageType, JOptionPane.YES_NO_OPTION, null, options, options[1]);
-			}
-			else
-			{
-				optionPane = new JOptionPane(message, messageType);
-			}
-
-			dialog = optionPane.createDialog(pluginPanel, title);
+			JOptionPane optionPane = new JOptionPane(message, messageType);
+			JDialog dialog = optionPane.createDialog(pluginPanel, title);
 			dialog.setAlwaysOnTop(true);
 			dialog.setVisible(true);
-
-			Object selectedValue = optionPane.getValue();
-			if (selectedValue == null)
-			{
-				return;
-			}
-
-			if (selectedValue.equals("Open OS League Tools"))
-			{
-				LinkBrowser.browse("https://www.osleague.tools/tracker?open=import&tab=tasks");
-			}
 		});
 	}
 
