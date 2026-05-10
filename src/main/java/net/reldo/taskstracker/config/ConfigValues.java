@@ -83,4 +83,24 @@ public class ConfigValues
 		DESCENDING;
 	}
 
+	public enum ProgressBarDisplay
+	{
+		NONE("None"),
+		NO_LABEL("No Label"),
+		WITH_LABEL("With Label"),
+		COMPACT("Compact");
+
+		public final String name;
+
+		public String toString()
+		{
+			return name;
+		}
+
+		ProgressBarDisplay(String name)
+		{
+			this.name = name;
+		}
+	}
+
 }

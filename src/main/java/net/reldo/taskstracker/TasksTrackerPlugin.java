@@ -41,6 +41,7 @@ import net.reldo.taskstracker.data.gson.GsonFactory;
 import net.reldo.taskstracker.data.route.RouteManager;
 import net.reldo.taskstracker.data.route.ShortestPathService;
 import net.reldo.taskstracker.data.jsondatastore.reader.DataStoreReader;
+import net.reldo.taskstracker.data.jsondatastore.reader.FileDataStoreReader;
 import net.reldo.taskstracker.data.jsondatastore.reader.HttpDataStoreReader;
 import net.reldo.taskstracker.data.reldo.ReldoImport;
 import net.reldo.taskstracker.data.task.ITask;
@@ -92,16 +93,24 @@ public class TasksTrackerPlugin extends Plugin
 	public static final String CONFIG_GROUP_NAME = "tasks-tracker";
 
 	public int[] playerSkills;
+	public int[] playerXp;
 
 	public TextMatcher taskTextMatcher;
 
 	public TasksTrackerPluginPanel pluginPanel;
 
+	private Set<Skill> dirtyXpSkills = new HashSet<>();
+	private Set<Integer> dirtyProgressVarpIds = new HashSet<>();
+	private Set<Integer> dirtyProgressVarbitIds = new HashSet<>();
 	private static final long VARP_UPDATE_THROTTLE_DELAY_MS = 7 * 1000;
+	private static final long XP_PROGRESS_UPDATE_DELAY_MS = 10 * 1000;
+	private static final long VAR_PROGRESS_UPDATE_DELAY_MS = 5 * 1000;
 
 	private boolean forceUpdateVarpsFlag = false;
 	private Set<Integer> varpIdsToUpdate = new HashSet<>();
 	private long lastVarpUpdate = 0;
+	private long lastXpProgressUpdate = 0;
+	private long lastVarProgressUpdate = 0;
 	private NavigationButton navButton;
 	private RuneScapeProfileType currentProfileType;
 	private final Map<Skill, Integer> oldExperience = new EnumMap<>(Skill.class);
@@ -160,7 +169,7 @@ public class TasksTrackerPlugin extends Plugin
 	@Override
 	public void configure(Binder binder)
 	{
-		binder.bind(DataStoreReader.class).to(HttpDataStoreReader.class);
+		binder.bind(DataStoreReader.class).to(FileDataStoreReader.class);
 		super.configure(binder);
 	}
 
@@ -273,11 +282,23 @@ public class TasksTrackerPlugin extends Plugin
 			return;
 		}
 		int varpId = varbitChanged.getVarpId();
-		if (!taskService.isVarpInCurrentTaskType(varpId))
+		if (taskService.isVarpInCurrentTaskType(varpId))
 		{
-			return;
+			varpIdsToUpdate.add(varpId);
 		}
-		varpIdsToUpdate.add(varbitChanged.getVarpId());
+
+		if (taskService.isProgressVarpInCurrentTaskType(varpId))
+		{
+			taskService.updateProgressVarp(varpId, varbitChanged.getValue());
+			dirtyProgressVarpIds.add(varpId);
+		}
+
+		int varbitId = varbitChanged.getVarbitId();
+		if (varbitId > 0 && taskService.isProgressVarbitInCurrentTaskType(varbitId))
+		{
+			taskService.updateProgressVarbit(varbitId, varbitChanged.getValue());
+			dirtyProgressVarbitIds.add(varbitId);
+		}
 	}
 
 	@Subscribe
@@ -307,6 +328,12 @@ public class TasksTrackerPlugin extends Plugin
 		if (configChanged.getKey().equals("showRandomTaskButton"))
 		{
 			redraw();
+		}
+
+		if (configChanged.getKey().equals("progressBarDisplay")
+			|| configChanged.getKey().equals("showProgressBarsForCompletedTasks"))
+		{
+			refreshAllTasks();
 		}
 
 		if (configChanged.getKey().startsWith("tab")) // task list tab config items all start 'tab#'
@@ -389,19 +416,39 @@ public class TasksTrackerPlugin extends Plugin
 			log.debug("forceUpdateVarpsFlag game tick {} {}", forceUpdateVarpsFlag, taskService.isTaskTypeChanged());
 			trackerRSProfileConfigStore.loadCurrentTaskTypeFromConfig();
 			forceVarpUpdate();
+			forceTaskProgressUpdate();
 			updateFilterMatcher();
 			SwingUtilities.invokeLater(() -> pluginPanel.drawNewTaskType());
 			forceUpdateVarpsFlag = false;
 			taskService.setTaskTypeChanged(false);
 		}
 
-		// Flush throttled varp updates
 		long currentTimeEpoch = System.currentTimeMillis();
 		if (currentTimeEpoch - lastVarpUpdate > VARP_UPDATE_THROTTLE_DELAY_MS)
 		{
 			flushVarpUpdates(varpIdsToUpdate);
 			varpIdsToUpdate = new HashSet<>();
 			lastVarpUpdate = currentTimeEpoch;
+		}
+
+		if (currentTimeEpoch - lastXpProgressUpdate > XP_PROGRESS_UPDATE_DELAY_MS && !dirtyXpSkills.isEmpty() )
+		{
+			Set<Skill> toFlush = dirtyXpSkills;
+			dirtyXpSkills.clear();
+			lastXpProgressUpdate = currentTimeEpoch;
+			SwingUtilities.invokeLater(() ->
+				toFlush.forEach(s -> pluginPanel.taskListPanel.refreshProgressBarsForSkill(s)));
+		}
+
+		if (currentTimeEpoch - lastVarProgressUpdate > VAR_PROGRESS_UPDATE_DELAY_MS && (!dirtyProgressVarpIds.isEmpty() || !dirtyProgressVarbitIds.isEmpty()))
+		{
+			Set<Integer> varpsToFlush = dirtyProgressVarpIds;
+			Set<Integer> varbitsToFlush = dirtyProgressVarbitIds;
+			dirtyProgressVarpIds = new HashSet<>();
+			dirtyProgressVarbitIds = new HashSet<>();
+			lastVarProgressUpdate = currentTimeEpoch;
+			SwingUtilities.invokeLater(() ->
+				pluginPanel.taskListPanel.refreshProgressBarsForVars(varpsToFlush, varbitsToFlush));
 		}
 	}
 
@@ -417,6 +464,9 @@ public class TasksTrackerPlugin extends Plugin
 			playerSkills = client.getRealSkillLevels();
 		}
 
+		// Cache all skill XP for progress bar reads
+		playerXp = client.getSkillExperiences();
+
 		final Skill skill = statChanged.getSkill();
 
 		// Modified from m0bilebtw's modification from Nightfirecat's virtual level ups plugin
@@ -426,6 +476,9 @@ public class TasksTrackerPlugin extends Plugin
 		final int levelBefore = xpBefore == -1 ? -1 : Experience.getLevelForXp(xpBefore);
 
 		oldExperience.put(skill, xpAfter);
+
+		// Mark skill dirty so the game-tick flush can update progress bars
+		dirtyXpSkills.add(skill);
 
 		// Do not proceed if any of the following are true:
 		//  * xpBefore == -1              (don't fire when first setting new known value)
@@ -663,6 +716,28 @@ public class TasksTrackerPlugin extends Plugin
 			{
 				log.debug("forceVarpUpdate processed complete, saving");
 				saveCurrentTaskTypeData();
+			}
+		});
+	}
+
+	public void forceTaskProgressUpdate()
+	{
+		Set<Integer> varpIds = taskService.getProgressVarpIds();
+		Set<Integer> varbitIds = taskService.getProgressVarbitIds();
+
+		if (varpIds.isEmpty() && varbitIds.isEmpty())
+		{
+			return;
+		}
+
+		clientThread.invoke(() -> {
+			for (int id : varpIds)
+			{
+				taskService.updateProgressVarp(id, client.getVarpValue(id));
+			}
+			for (int id : varbitIds)
+			{
+				taskService.updateProgressVarbit(id, client.getVarbitValue(id));
 			}
 		});
 	}

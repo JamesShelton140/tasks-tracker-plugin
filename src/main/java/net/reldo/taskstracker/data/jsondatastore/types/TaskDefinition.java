@@ -57,4 +57,10 @@ public class TaskDefinition
 	 * Used as GPS fallback when no route location is set.
 	 */
 	private WorldPoint location;
+
+	/**
+	 * Progress bars to display on the task panel for incomplete tasks.
+	 * Each entry describes one bar (type, source, and target value).
+	 */
+	private List<TaskProgressDefinition> progress;
 }

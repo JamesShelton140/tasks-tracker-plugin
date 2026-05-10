@@ -85,6 +85,30 @@ public interface TasksTrackerConfig extends Config
 		return Keybind.NOT_SET;
 	}
 
+	@ConfigItem(
+		position = 60,
+		keyName = "progressBarDisplay",
+		name = "Progress Bars",
+		description = "Controls how task progress bars are displayed. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar. \"Compact\" shows a slim bar with no label.",
+		section = generalSettings
+	)
+	default ConfigValues.ProgressBarDisplay progressBarDisplay()
+	{
+		return ConfigValues.ProgressBarDisplay.WITH_LABEL;
+	}
+
+	@ConfigItem(
+		position = 62,
+		keyName = "showProgressBarsForCompletedTasks",
+		name = "Show Progress Bars for Completed Tasks",
+		description = "Show progress bars on tasks that have already been completed.",
+		section = generalSettings
+	)
+	default boolean showProgressBarsForCompletedTasks()
+	{
+		return false;
+	}
+
 
 	/*=================================================================================================================
 	-- Pinned task settings                                                                                        --
