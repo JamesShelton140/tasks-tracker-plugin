@@ -81,7 +81,6 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.LinkBrowser;
 
 @Slf4j
 @PluginDescriptor(
