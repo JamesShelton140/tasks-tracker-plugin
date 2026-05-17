@@ -484,7 +484,7 @@ public class TaskPanel extends JPanel
 		}
 
 		boolean compact = displayMode == ConfigValues.ProgressBarDisplay.COMPACT;
-		boolean withText = displayMode == ConfigValues.ProgressBarDisplay.WITH_LABEL;
+		boolean withText = displayMode == ConfigValues.ProgressBarDisplay.FULL;
 		int barHeight = compact ? 6 : 12;
 
 		for (TaskProgressDefinition def : progressDefs)
@@ -705,6 +705,14 @@ public class TaskPanel extends JPanel
 			return;
 		}
 
+		ConfigValues.OverlayProgressBarDisplay displayMode = plugin.getConfig().overlayProgressBarDisplay();
+		if (displayMode == ConfigValues.OverlayProgressBarDisplay.NONE)
+		{
+			return;
+		}
+
+		boolean withText = displayMode == ConfigValues.OverlayProgressBarDisplay.FULL;
+
 		panelComponent.getChildren().add(LineComponent.builder().build());
 		for (TaskProgressDefinition def : progressDefs)
 		{
@@ -715,7 +723,7 @@ public class TaskPanel extends JPanel
 			bar.setMinimum(0);
 			bar.setMaximum(target);
 			bar.setValue(current);
-			bar.setLabelDisplayMode(ProgressBarComponent.LabelDisplayMode.FULL);
+			bar.setLabelDisplayMode(withText ? ProgressBarComponent.LabelDisplayMode.FULL : ProgressBarComponent.LabelDisplayMode.TEXT_ONLY);
 			bar.setForegroundColor(new Color(0, 168, 0));
 			panelComponent.getChildren().add(bar);
 		}

@@ -87,7 +87,7 @@ public class ConfigValues
 	{
 		NONE("None"),
 		NO_LABEL("No Label"),
-		WITH_LABEL("With Label"),
+		FULL("With Label"),
 		COMPACT("Compact");
 
 		public final String name;
@@ -98,6 +98,25 @@ public class ConfigValues
 		}
 
 		ProgressBarDisplay(String name)
+		{
+			this.name = name;
+		}
+	}
+
+	public enum OverlayProgressBarDisplay
+	{
+		NONE("None"),
+		NO_LABEL("No Label"),
+		FULL("With Label");
+
+		public final String name;
+
+		public String toString()
+		{
+			return name;
+		}
+
+		OverlayProgressBarDisplay(String name)
 		{
 			this.name = name;
 		}

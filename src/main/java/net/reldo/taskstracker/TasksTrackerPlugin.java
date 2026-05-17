@@ -329,6 +329,7 @@ public class TasksTrackerPlugin extends Plugin
 		}
 
 		if (configChanged.getKey().equals("progressBarDisplay")
+			|| configChanged.getKey().equals("overlayProgressBarDisplay")
 			|| configChanged.getKey().equals("showProgressBarsForCompletedTasks"))
 		{
 			refreshAllTasks();

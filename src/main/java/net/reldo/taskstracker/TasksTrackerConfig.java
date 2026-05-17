@@ -88,13 +88,25 @@ public interface TasksTrackerConfig extends Config
 	@ConfigItem(
 		position = 60,
 		keyName = "progressBarDisplay",
-		name = "Progress Bars",
-		description = "Controls how task progress bars are displayed. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar. \"Compact\" shows a slim bar with no label.",
+		name = "Task Panel Progress Bars",
+		description = "Controls how task progress bars are displayed in the task panel. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar. \"Compact\" shows a slim bar with no label.",
 		section = generalSettings
 	)
 	default ConfigValues.ProgressBarDisplay progressBarDisplay()
 	{
-		return ConfigValues.ProgressBarDisplay.WITH_LABEL;
+		return ConfigValues.ProgressBarDisplay.FULL;
+	}
+
+	@ConfigItem(
+		position = 61,
+		keyName = "overlayProgressBarDisplay",
+		name = "Overlay Progress Bars",
+		description = "Controls how task progress bars are displayed in the overlay. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar.",
+		section = generalSettings
+	)
+	default ConfigValues.OverlayProgressBarDisplay overlayProgressBarDisplay()
+	{
+		return ConfigValues.OverlayProgressBarDisplay.FULL;
 	}
 
 	@ConfigItem(
