@@ -101,7 +101,7 @@ public interface TasksTrackerConfig extends Config
 		position = 61,
 		keyName = "overlayProgressBarDisplay",
 		name = "Overlay Progress Bars",
-		description = "Controls how task progress bars are displayed in the overlay. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar.",
+		description = "Controls how task progress bars are displayed in the overlay.",
 		section = generalSettings
 	)
 	default ConfigValues.OverlayProgressBarDisplay overlayProgressBarDisplay()

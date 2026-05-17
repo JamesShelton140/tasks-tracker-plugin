@@ -711,8 +711,6 @@ public class TaskPanel extends JPanel
 			return;
 		}
 
-		boolean withText = displayMode == ConfigValues.OverlayProgressBarDisplay.FULL;
-
 		panelComponent.getChildren().add(LineComponent.builder().build());
 		for (TaskProgressDefinition def : progressDefs)
 		{
@@ -723,7 +721,7 @@ public class TaskPanel extends JPanel
 			bar.setMinimum(0);
 			bar.setMaximum(target);
 			bar.setValue(current);
-			bar.setLabelDisplayMode(withText ? ProgressBarComponent.LabelDisplayMode.FULL : ProgressBarComponent.LabelDisplayMode.TEXT_ONLY);
+			bar.setLabelDisplayMode(displayMode.labelDisplayMode);
 			bar.setForegroundColor(new Color(0, 168, 0));
 			panelComponent.getChildren().add(bar);
 		}
