@@ -5,8 +5,6 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -54,7 +52,6 @@ import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.ProgressBarComponent;
-import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
@@ -267,8 +264,7 @@ public class TaskPanel extends JPanel
 		add(highlightContainer, BorderLayout.NORTH);
 
 		progressBarsPanel.setLayout(new BoxLayout(progressBarsPanel, BoxLayout.Y_AXIS));
-		progressBarsPanel.setBorder(new EmptyBorder(0, 2, 1, 2));
-		add(progressBarsPanel, BorderLayout.CENTER);
+		highlightContainer.add(progressBarsPanel, BorderLayout.SOUTH);
 
 		setComponentPopupMenu(popupMenu);
 	}
@@ -577,7 +573,7 @@ public class TaskPanel extends JPanel
 		return " - " + points + " points";
 	}
 
-	public void buildOverlayText(Graphics2D graphics, PanelComponent panelComponent)
+	public void buildOverlayText(PanelComponent panelComponent)
 	{
 
 		ITask task = this.task;
@@ -598,13 +594,9 @@ public class TaskPanel extends JPanel
 		}
 
 		// Title
-		final FontMetrics fontMetrics = graphics.getFontMetrics();
-		int panelWidth = Math.max(ComponentConstants.STANDARD_WIDTH, fontMetrics.stringWidth(task.getName()) +
-			ComponentConstants.STANDARD_BORDER + ComponentConstants.STANDARD_BORDER);
-
-		panelComponent.setPreferredSize(new Dimension(panelWidth, 0));
-		panelComponent.getChildren().add(TitleComponent.builder()
-			.text(task.getName())
+		panelComponent.setPreferredSize(new Dimension(ComponentConstants.STANDARD_WIDTH, 0));
+		panelComponent.getChildren().add(LineComponent.builder()
+			.left(task.getName())
 			.build());
 
 		// Description
@@ -767,7 +759,7 @@ public class TaskPanel extends JPanel
 				return 0;
 		}
 	}
-	
+
 	private LineComponent getSkillRequirementLineComponent(String skillName, Integer playerLevel, int requiredLevel)
 	{
 		Color color = playerLevel >= requiredLevel ? Colors.QUALIFIED_TEXT_COLOR : Colors.UNQUALIFIED_TEXT_COLOR;
