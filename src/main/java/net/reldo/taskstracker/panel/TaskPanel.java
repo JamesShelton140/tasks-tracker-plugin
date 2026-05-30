@@ -2,10 +2,12 @@ package net.reldo.taskstracker.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
@@ -26,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.JToolTip;
+import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -509,6 +512,11 @@ public class TaskPanel extends JPanel
 	{
 		JToolTip customTooltip = new JToolTip();
 		customTooltip.setFont(FontManager.getRunescapeSmallFont());
+		customTooltip.addMouseWheelListener(e ->
+		{
+			MouseWheelEvent eventForTarget = (MouseWheelEvent) SwingUtilities.convertMouseEvent((Component) e.getSource(), e, this);
+			this.dispatchEvent(eventForTarget);
+		});
 		return customTooltip;
 	}
 
