@@ -63,14 +63,16 @@ public class TaskPanel extends JPanel
 	private static final String ADD_STATE = "Add to canvas";
 	private static final String REMOVE_STATE = "Remove from canvas";
 
+	private static final int LABEL_WIDTH = 162;
+
 	public final ITask task;
 
 	private final JLabel tierIcon = new JLabel();
 	private final JPanel container = new JPanel(new BorderLayout());
 	private final JPanel highlightContainer = new JPanel(new BorderLayout());
 	private final JPanel body = new JPanel(new BorderLayout());
-	private final WrapLabel name = new WrapLabel("task");
-	private final WrapLabel description = new WrapLabel("description");
+	private final WrapLabel name = new WrapLabel("task", LABEL_WIDTH);
+	private final WrapLabel description = new WrapLabel("description", LABEL_WIDTH);
 	private final JPanel buttons = new JPanel();
 	private final JToggleButton toggleTrack = new JToggleButton();
 	private final JToggleButton toggleIgnore = new JToggleButton();
