@@ -3,16 +3,19 @@ package net.reldo.taskstracker.data.task;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.Getter;
+import net.reldo.taskstracker.data.jsondatastore.types.ProgressType;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinition;
 import net.reldo.taskstracker.data.reldo.ReldoTaskSave;
 import net.runelite.api.Client;
 import net.runelite.api.StructComposition;
+import net.runelite.api.coords.WorldPoint;
 
 @Slf4j
-public class TaskFromStruct
+public class TaskFromStruct implements ITask
 {
 	@Getter
 	private final Integer structId;
@@ -37,9 +40,15 @@ public class TaskFromStruct
 	private StructComposition _struct;
 	private final Map<String, String> _stringParams = new HashMap<>();
 	private final Map<String, Integer> _intParams = new HashMap<>();
+	private Map<Integer, Integer> _cachedVarpProgress;
+	private Map<Integer, Integer> _cachedVarbitProgress;
 	@Getter
 	@Setter
 	private String note;
+	@Getter
+	@Setter
+	@Nullable
+	private WorldPoint completionLocation;
 
 	public TaskFromStruct(TaskType taskType, TaskDefinition taskDefinition)
 	{
@@ -47,6 +56,16 @@ public class TaskFromStruct
 		this.taskDefinition = taskDefinition;
 		this.structId = taskDefinition.getStructId();
 		this.sortId = taskDefinition.getSortId();
+	}
+
+	public int getTaskId()
+	{
+		return structId;
+	}
+
+	public int getVarpIndex()
+	{
+		return getIntParam("id");
 	}
 
 	public boolean hasNote()
@@ -64,8 +83,7 @@ public class TaskFromStruct
 		return this._intParams.get(paramName);
 	}
 
-	// TODO: Remove client from params
-	public boolean loadStructData(Client client)
+	public boolean loadData(Client client)
 	{
 		assert client.isClientThread();
 
@@ -161,6 +179,10 @@ public class TaskFromStruct
 	{
 		setDates(loadedData.completed, loadedData.ignored, loadedData.tracked);
 		setNote(loadedData.note);
+		if (loadedData.completionLocation != null)
+		{
+			setCompletionLocation(loadedData.completionLocation.toWorldPoint());
+		}
 	}
 
 	public void loadReldoSave(ReldoTaskSave loadedData)
@@ -219,5 +241,34 @@ public class TaskFromStruct
 	public Float getCompletionPercent()
 	{
 		return getTaskDefinition().getCompletionPercent();
+	}
+
+	@Override
+	public void setProgressValue(ProgressType type, int id, int value)
+	{
+		if (type == ProgressType.VARP)
+		{
+			if (_cachedVarpProgress == null) _cachedVarpProgress = new HashMap<>();
+			_cachedVarpProgress.put(id, value);
+		}
+		else if (type == ProgressType.VARBIT)
+		{
+			if (_cachedVarbitProgress == null) _cachedVarbitProgress = new HashMap<>();
+			_cachedVarbitProgress.put(id, value);
+		}
+	}
+
+	@Override
+	public int getProgressValue(ProgressType type, int id)
+	{
+		if (type == ProgressType.VARP)
+		{
+			return _cachedVarpProgress != null ? _cachedVarpProgress.getOrDefault(id, 0) : 0;
+		}
+		else if (type == ProgressType.VARBIT)
+		{
+			return _cachedVarbitProgress != null ? _cachedVarbitProgress.getOrDefault(id, 0) : 0;
+		}
+		return 0;
 	}
 }

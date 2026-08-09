@@ -17,6 +17,7 @@ import net.reldo.taskstracker.panel.filters.ComboItem;
 import net.reldo.taskstracker.panel.filters.DynamicButtonFilterPanel;
 import net.reldo.taskstracker.panel.filters.DynamicDropdownFilterPanel;
 import net.reldo.taskstracker.panel.filters.FilterPanel;
+import net.reldo.taskstracker.panel.filters.SkillButtonFilterPanel;
 import net.runelite.client.ui.ColorScheme;
 
 @Slf4j
@@ -75,9 +76,18 @@ public class SubFilterPanel extends FixedWidthPanel
 
 	private FilterPanel createDynamicFilterPanel(FilterConfig filterConfig) throws Exception
 	{
+		if (filterConfig.getFilterType() == null)
+		{
+			log.warn("Skipping filter panel for {} - filterType is null", filterConfig.getConfigKey());
+			return null;
+		}
 		switch (filterConfig.getFilterType())
 		{
 			case BUTTON_FILTER:
+				if (filterConfig.getValueType() == FilterValueType.SKILL || filterConfig.getConfigKey().equals("skill"))
+				{
+					return new SkillButtonFilterPanel(plugin, filterConfig, taskService.getCurrentTaskType());
+				}
 				return new DynamicButtonFilterPanel(plugin, filterConfig, taskService.getCurrentTaskType());
 			case DROPDOWN_FILTER:
 				ComboItem[] dropdownItems = getDropdownItems(filterConfig);

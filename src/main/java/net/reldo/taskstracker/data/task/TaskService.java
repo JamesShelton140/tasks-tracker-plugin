@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,11 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
-import net.reldo.taskstracker.data.jsondatastore.ManifestClient;
 import net.reldo.taskstracker.data.jsondatastore.TaskDataClient;
 import net.reldo.taskstracker.data.jsondatastore.types.FilterConfig;
 import net.reldo.taskstracker.data.jsondatastore.types.FilterValueType;
+import net.reldo.taskstracker.data.jsondatastore.types.ProgressType;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinition;
+import net.reldo.taskstracker.data.jsondatastore.types.TaskProgressDefinition;
+import net.reldo.taskstracker.data.jsondatastore.types.TaskSourceType;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.RouteItem;
 import net.reldo.taskstracker.data.route.RouteSection;
@@ -40,8 +42,6 @@ import net.runelite.client.config.ConfigManager;
 public class TaskService
 {
 	@Inject
-	private ManifestClient manifestClient;
-	@Inject
 	private TaskDataClient taskDataClient;
 	@Inject
 	private ClientThread clientThread;
@@ -51,17 +51,30 @@ public class TaskService
 	private FilterService filterService;
 	@Inject
 	private ConfigManager configManager;
+	@Inject
+	private TasksTrackerPlugin plugin;
 
+	@Getter
+	@Setter
+	private boolean taskTypeChangeInProgress = false;
 	@Getter
 	@Setter
 	private boolean taskTypeChanged = false;
 	@Getter
-	private TaskType currentTaskType;
+	private ITaskType currentTaskType;
 	@Getter
-	private final List<TaskFromStruct> tasks = new ArrayList<>();
+	private final List<ITask> tasks = new ArrayList<>();
+	@Getter
+	private Set<Integer> progressVarpIds = new HashSet<>();
+	@Getter
+	private Set<Integer> progressVarbitIds = new HashSet<>();
+	@Getter
+	private Map<Integer, List<ITask>> progressVarpToTasks = new HashMap<>();
+	@Getter
+	private Map<Integer, List<ITask>> progressVarbitToTasks = new HashMap<>();
 	@Getter
 	private final HashMap<String, HashMap<Integer, Integer>> sortedIndexes = new HashMap<>();
-	private HashMap<String, TaskType> _taskTypes = new HashMap<>();
+	private HashMap<String, ITaskType> _taskTypes = new HashMap<>();
 	private HashSet<Integer> currentTaskTypeVarps = new HashSet<>();
 	private final ExecutorService futureExecutor = Executors.newSingleThreadExecutor();
 
@@ -72,29 +85,14 @@ public class TaskService
 	@Getter
 	private final HashMap<String, HashMap<String, Integer>> customItemRouteIndexes = new HashMap<>();
 
-	public CompletableFuture<Boolean> setTaskType(String taskTypeJsonName)
-	{
-		return getTaskTypesByJsonName().thenCompose(taskTypes ->
-		{
-			TaskType newTaskType = taskTypes.get(taskTypeJsonName);
-			if (newTaskType == null)
-			{
-				log.error("unsupported task type {}, falling back to COMBAT", taskTypeJsonName);
-				newTaskType = taskTypes.get("COMBAT");
-			}
-			return this.setTaskType(newTaskType);
-		});
-	}
-
-	private CompletableFuture<Boolean> loadAllTasksStructData(Collection<TaskFromStruct> tasks)
+	private CompletableFuture<Boolean> loadAllTaskData(Collection<? extends ITask> tasks)
 	{
 		Collection<CompletableFuture<Boolean>> taskFutures = new ArrayList<>();
-		for (TaskFromStruct task : tasks)
+		for (ITask task : tasks)
 		{
 			CompletableFuture<Boolean> taskFuture = new CompletableFuture<>();
 			clientThread.invoke(() -> {
-				boolean isTaskLoaded = task.loadStructData(client);
-				taskFuture.complete(isTaskLoaded);
+				taskFuture.complete(task.loadData(client));
 			});
 			taskFutures.add(taskFuture);
 		}
@@ -110,121 +108,179 @@ public class TaskService
 		});
 	}
 
-	public CompletableFuture<Boolean> setTaskType(TaskType newTaskType)
+	public CompletableFuture<Boolean> setTaskType(String taskTypeJsonName)
 	{
-		log.debug("setTaskType {}", newTaskType.getTaskJsonName());
-		if (newTaskType.equals(currentTaskType))
+		return getTaskTypesByJsonName().thenCompose(taskTypes ->
 		{
-			log.debug("Skipping setTaskType, same task type selected");
-			return CompletableFuture.completedFuture(false);
-		}
-		currentTaskType = newTaskType;
-		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "taskTypeJsonName", newTaskType.getTaskJsonName());
-		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", 0);
-
-		// Complete creation of any GLOBAL value type filterConfigs
-		for (FilterConfig filterConfig : currentTaskType.getFilters())
-		{
-			if (filterConfig.getValueType().equals(FilterValueType.GLOBAL))
+			ITaskType newTaskType = taskTypes.get(taskTypeJsonName);
+			if (newTaskType == null)
 			{
-				// Set valueType to the one required by the global filter
-				FilterConfig globalFilterConfig = filterService.getGlobalFilterByKey(filterConfig.getConfigKey());
-				filterConfig.setValueType(globalFilterConfig.getValueType());
-
-				// Set any filterConfig fields not already specified
-				Optional.ofNullable(filterConfig.getLabel()).ifPresentOrElse(val -> {
-				}, () -> filterConfig.setLabel(globalFilterConfig.getLabel()));
-				Optional.ofNullable(filterConfig.getFilterType()).ifPresentOrElse(val -> {
-				}, () -> filterConfig.setFilterType(globalFilterConfig.getFilterType()));
-				Optional.ofNullable(filterConfig.getValueName()).ifPresentOrElse(val -> {
-				}, () -> filterConfig.setValueName(globalFilterConfig.getValueName()));
-				Optional.ofNullable(filterConfig.getOptionLabelEnum()).ifPresentOrElse(val -> {
-				}, () -> filterConfig.setOptionLabelEnum(globalFilterConfig.getOptionLabelEnum()));
-				Optional.ofNullable(filterConfig.getCustomItems()).ifPresentOrElse(val -> {
-				}, () -> filterConfig.setCustomItems(globalFilterConfig.getCustomItems()));
+				log.error("unsupported task type {}, falling back to COMBAT", taskTypeJsonName);
+				newTaskType = taskTypes.get("COMBAT");
 			}
-		}
-
-		List<TaskFromStruct> newTasks = new ArrayList<>();
-		return newTaskType.loadTaskTypeDataAsync().thenCompose((isTaskTypeLoaded) -> {
-			if (!isTaskTypeLoaded)
+			log.debug("setTaskType {}", newTaskType.getTaskJsonName());
+			if (newTaskType.equals(currentTaskType))
 			{
-				log.error("Error loading task type during setTaskType");
+				log.debug("Skipping setTaskType, same task type selected");
+				taskTypeChangeInProgress = false;
+				plugin.setTaskTypeDropdownEnabled(true);
 				return CompletableFuture.completedFuture(false);
 			}
+			taskTypeChangeInProgress = true;
+			plugin.setTaskTypeDropdownEnabled(false);
+			currentTaskType = newTaskType;
+			configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "taskTypeJsonName", newTaskType.getTaskJsonName());
+			configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", 0);
 
-			CompletableFuture<Boolean> future = new CompletableFuture<>();
-			futureExecutor.submit(() -> {
-				try
+			// Complete creation of any GLOBAL value type filterConfigs
+			for (FilterConfig filterConfig : currentTaskType.getFilters())
+			{
+				if (filterConfig.getValueType().equals(FilterValueType.GLOBAL))
 				{
-					Collection<TaskDefinition> taskDefinitions = taskDataClient.getTaskDefinitions(currentTaskType.getTaskJsonName());
-					for (TaskDefinition definition : taskDefinitions)
+					// Set valueType to the one required by the global filter
+					FilterConfig globalFilterConfig = filterService.getGlobalFilterByKey(filterConfig.getConfigKey());
+					if (globalFilterConfig == null)
 					{
-						TaskFromStruct task = new TaskFromStruct(currentTaskType, definition);
-						newTasks.add(task);
+						log.warn("Missing global filter config for key {}, skipping fixup", filterConfig.getConfigKey());
+						continue;
 					}
-					loadAllTasksStructData(newTasks).thenApply(future::complete);
-				}
-				catch (Exception e3)
-				{
-					future.completeExceptionally(e3);
-				}
-			});
-			return future;
-		}).thenCompose(areTasksLoaded -> {
-			if (!areTasksLoaded)
-			{
-				return CompletableFuture.completedFuture(false);
-			}
+					filterConfig.setValueType(globalFilterConfig.getValueType());
 
-			tasks.clear();
-			tasks.addAll(newTasks);
-
-			// Clear route state from previous task type
-			routeIndexes.clear();
-			customItemRouteIndexes.clear();
-			tabActiveRoutes.clear();
-
-			// Index task list for each property
-			sortedIndexes.clear();
-			currentTaskType.getIntParamMap().keySet().forEach(paramName -> {
-				sortedIndexes.put(paramName, null);
-				addSortedIndex(paramName, Comparator.comparingInt((TaskFromStruct task) -> task.getIntParam(paramName)));
-			});
-			currentTaskType.getStringParamMap().keySet().forEach(paramName -> {
-				sortedIndexes.put(paramName, null);
-				addSortedIndex(paramName, Comparator.comparing((TaskFromStruct task) -> task.getStringParam(paramName)));
-			});
-			// todo: make this less of a special case.
-			if (tasks.stream().anyMatch(task -> task.getCompletionPercent() != null))
-			{
-				sortedIndexes.put("completion %", null);
-				addSortedIndex("completion %",
-					(TaskFromStruct task1, TaskFromStruct task2) ->
+					// Preserve task-type-specific overrides where explicitly set
+					if (filterConfig.getLabel() == null) filterConfig.setLabel(globalFilterConfig.getLabel());
+					if (filterConfig.getFilterType() == null) filterConfig.setFilterType(globalFilterConfig.getFilterType());
+					if (filterConfig.getValueName() == null) filterConfig.setValueName(globalFilterConfig.getValueName());
+					if (filterConfig.getOptionLabelEnum() == null) filterConfig.setOptionLabelEnum(globalFilterConfig.getOptionLabelEnum());
+					if (filterConfig.getCustomItems() == null || filterConfig.getCustomItems().isEmpty())
 					{
-						Float comp1 = task1.getTaskDefinition().getCompletionPercent() != null ? task1.getTaskDefinition().getCompletionPercent() : 0;
-						Float comp2 = task2.getTaskDefinition().getCompletionPercent() != null ? task2.getTaskDefinition().getCompletionPercent() : 0;
-						return comp1.compareTo(comp2);
-					});
+						filterConfig.setCustomItems(globalFilterConfig.getCustomItems());
+					}
+				}
 			}
 
-			currentTaskTypeVarps.clear();
-			currentTaskTypeVarps = new HashSet<>(currentTaskType.getTaskVarps());
+			List<ITask> newTasks = new ArrayList<>();
+			return newTaskType.loadTaskTypeDataAsync().thenCompose((isTaskTypeLoaded) -> {
+				if (!isTaskTypeLoaded)
+				{
+					log.error("Error loading task type during setTaskType");
+					taskTypeChangeInProgress = false;
+					plugin.setTaskTypeDropdownEnabled(true);
+					return CompletableFuture.completedFuture(false);
+				}
 
-			taskTypeChanged = true;
-			return CompletableFuture.completedFuture(true);
+				CompletableFuture<Boolean> future = new CompletableFuture<>();
+				futureExecutor.submit(() -> {
+					try
+					{
+						Collection<TaskDefinition> taskDefinitions = taskDataClient.getTaskDefinitions(currentTaskType.getTaskJsonName());
+						TaskSourceType sourceType = currentTaskType.getTaskTypeDefinition().getTaskSourceType();
+						for (TaskDefinition definition : taskDefinitions)
+						{
+							if (sourceType == TaskSourceType.STRUCT)
+							{
+								TaskFromStruct task = new TaskFromStruct((TaskType) currentTaskType, definition);
+								newTasks.add(task);
+							}
+							else
+							{
+								TaskFromDbRow task = new TaskFromDbRow(currentTaskType, definition);
+								newTasks.add(task);
+							}
+						}
+						loadAllTaskData(newTasks).thenApply(future::complete);
+					}
+					catch (Exception e3)
+					{
+						future.completeExceptionally(e3);
+					}
+				});
+				return future;
+			}).thenCompose(areTasksLoaded -> {
+				if (!areTasksLoaded)
+				{
+					taskTypeChangeInProgress = false;
+					plugin.setTaskTypeDropdownEnabled(true);
+					return CompletableFuture.completedFuture(false);
+				}
+
+				tasks.clear();
+				tasks.addAll(newTasks);
+
+				progressVarpIds = new HashSet<>();
+				progressVarbitIds = new HashSet<>();
+				progressVarpToTasks = new HashMap<>();
+				progressVarbitToTasks = new HashMap<>();
+				for (ITask task : tasks)
+				{
+					List<TaskProgressDefinition> progressDefs = task.getTaskDefinition().getProgress();
+					if (progressDefs == null) continue;
+					for (TaskProgressDefinition def : progressDefs)
+					{
+						if (def.getType() == ProgressType.VARP && def.getId() != null)
+						{
+							progressVarpIds.add(def.getId());
+							progressVarpToTasks.computeIfAbsent(def.getId(), k -> new ArrayList<>()).add(task);
+						}
+						else if (def.getType() == ProgressType.VARBIT && def.getId() != null)
+						{
+							progressVarbitIds.add(def.getId());
+							progressVarbitToTasks.computeIfAbsent(def.getId(), k -> new ArrayList<>()).add(task);
+						}
+					}
+				}
+
+				// Clear route state from previous task type
+				routeIndexes.clear();
+				customItemRouteIndexes.clear();
+				tabActiveRoutes.clear();
+
+				// Index task list for each property
+				sortedIndexes.clear();
+				currentTaskType.getIntParamMap().keySet().forEach(paramName -> {
+					sortedIndexes.put(paramName, null);
+					addSortedIndex(paramName, Comparator.comparingInt((ITask task) -> {
+						Integer v = task.getIntParam(paramName);
+						return v != null ? v : 0;
+					}));
+				});
+				currentTaskType.getStringParamMap().keySet().forEach(paramName -> {
+					sortedIndexes.put(paramName, null);
+					addSortedIndex(paramName, Comparator.comparing(
+						(ITask task) -> task.getStringParam(paramName),
+						Comparator.nullsLast(Comparator.naturalOrder())));
+				});
+				// todo: make this less of a special case.
+				if (tasks.stream().anyMatch(task -> task.getCompletionPercent() != null))
+				{
+					sortedIndexes.put("completion %", null);
+					addSortedIndex("completion %",
+						(ITask task1, ITask task2) ->
+						{
+							Float comp1 = task1.getTaskDefinition().getCompletionPercent() != null ? task1.getTaskDefinition().getCompletionPercent() : 0;
+							Float comp2 = task2.getTaskDefinition().getCompletionPercent() != null ? task2.getTaskDefinition().getCompletionPercent() : 0;
+							return comp1.compareTo(comp2);
+						});
+				}
+
+				currentTaskTypeVarps.clear();
+				currentTaskTypeVarps = new HashSet<>(currentTaskType.getTaskVarps());
+
+				taskTypeChangeInProgress = false;
+				taskTypeChanged = true;
+				return CompletableFuture.completedFuture(true);
+			});
 		});
 	}
 
-	private void addSortedIndex(String paramName, Comparator<TaskFromStruct> comparator)
+	private void addSortedIndex(String paramName, Comparator<ITask> comparator)
 	{
-		List<TaskFromStruct> sortedTasks = tasks.stream()
+		List<ITask> sortedTasks = tasks.stream()
 			.sorted(comparator)
 			.collect(Collectors.toCollection(ArrayList::new));
 		HashMap<Integer, Integer> sortedIndex = new HashMap<>();
-		for (TaskFromStruct task : tasks)
+		for (ITask task : tasks)
 		{
-			sortedIndex.put(task.getStructId(), sortedTasks.indexOf(task));
+			sortedIndex.put(task.getTaskId(), sortedTasks.indexOf(task));
 		}
 		sortedIndexes.put(paramName, sortedIndex);
 	}
@@ -259,11 +315,11 @@ public class TaskService
 		}
 
 		int afterRouteIndex = route.getItemCount() + sections.size();
-		for (TaskFromStruct task : tasks)
+		for (ITask task : tasks)
 		{
-			if (!route.getFlattenedOrder().contains(task.getStructId()))
+			if (!route.getFlattenedOrder().contains(task.getTaskId()))
 			{
-				routeIndex.put(task.getStructId(), ++afterRouteIndex);
+				routeIndex.put(task.getTaskId(), ++afterRouteIndex);
 			}
 		}
 
@@ -271,29 +327,39 @@ public class TaskService
 		customItemRouteIndexes.put(route.getId(), customIndex);
 	}
 
-	public int getTaskIndex(String sortCriteria, Integer taskStructId)
+	public int getTaskIndex(String sortCriteria, Integer taskId)
 	{
-		return getTaskIndex(sortCriteria, taskStructId, true);
+		return getTaskIndex(sortCriteria, taskId, true);
 	}
 
-	public int getTaskIndex(String indexId, Integer taskStructId, Boolean ascending)
+	public int getTaskIndex(String indexId, Integer taskId, Boolean ascending)
 	{
-		int position;
+		Integer position = null;
 		ConfigValues.TaskListTabs currentTab = configManager.getConfig(TasksTrackerConfig.class).taskListTab();
 		boolean activeRoute = hasActiveRoute(currentTab);
 
-		if (!activeRoute && sortedIndexes.containsKey(indexId))
+		if (!activeRoute)
 		{
-			position = sortedIndexes.get(indexId).get(taskStructId);
-		}
-		else if (activeRoute && routeIndexes.containsKey(indexId))
-		{
-			position = routeIndexes.get(indexId).get(taskStructId);
+			HashMap<Integer, Integer> sortedIndex = sortedIndexes.get(indexId);
+			if (sortedIndex != null)
+			{
+				position = sortedIndex.get(taskId);
+			}
 		}
 		else
 		{
+			HashMap<Integer, Integer> routeIndex = routeIndexes.get(indexId);
+			if (routeIndex != null)
+			{
+				position = routeIndex.get(taskId);
+			}
+		}
+
+		if (position == null)
+		{
 			// Fall back to game UI sort order
-			position = getTaskByStructId(taskStructId).getSortId();
+			ITask task = getTaskById(taskId);
+			position = task != null ? task.getSortId() : 0;
 		}
 
 		return (ascending || activeRoute) ? position : tasks.size() - (position + 1);
@@ -314,6 +380,38 @@ public class TaskService
 		return currentTaskTypeVarps.contains(varpId);
 	}
 
+	public boolean isProgressVarpInCurrentTaskType(int varpId)
+	{
+		return progressVarpIds.contains(varpId);
+	}
+
+	public boolean isProgressVarbitInCurrentTaskType(int varbitId)
+	{
+		return progressVarbitIds.contains(varbitId);
+	}
+
+	public List<ITask> getTasksForProgressVarp(int varpId)
+	{
+		List<ITask> result = progressVarpToTasks.get(varpId);
+		return result != null ? result : java.util.Collections.emptyList();
+	}
+
+	public List<ITask> getTasksForProgressVarbit(int varbitId)
+	{
+		List<ITask> result = progressVarbitToTasks.get(varbitId);
+		return result != null ? result : java.util.Collections.emptyList();
+	}
+
+	public void updateProgressVarp(int varpId, int value)
+	{
+		getTasksForProgressVarp(varpId).forEach(t -> t.setProgressValue(ProgressType.VARP, varpId, value));
+	}
+
+	public void updateProgressVarbit(int varbitId, int value)
+	{
+		getTasksForProgressVarbit(varbitId).forEach(t -> t.setProgressValue(ProgressType.VARBIT, varbitId, value));
+	}
+
 	public void clearTaskTypes()
 	{
 		this._taskTypes.clear();
@@ -324,7 +422,7 @@ public class TaskService
 	 *
 	 * @return Hashmap of TaskType indexed by task type json name
 	 */
-	public CompletableFuture<HashMap<String, TaskType>> getTaskTypesByJsonName()
+	public CompletableFuture<HashMap<String, ITaskType>> getTaskTypesByJsonName()
 	{
 		if (_taskTypes.size() > 0)
 		{
@@ -333,7 +431,7 @@ public class TaskService
 
 		try
 		{
-			CompletableFuture<HashMap<String, TaskType>> future = new CompletableFuture<>();
+			CompletableFuture<HashMap<String, ITaskType>> future = new CompletableFuture<>();
 			futureExecutor.submit(() ->
 			{
 				try
@@ -386,7 +484,7 @@ public class TaskService
 		return future;
 	}
 
-	public void applySave(TaskType saveTaskType, HashMap<Integer, ConfigTaskSave> saveData)
+	public void applySave(ITaskType saveTaskType, HashMap<Integer, ConfigTaskSave> saveData)
 	{
 		String currentTaskTypeName = currentTaskType.getTaskJsonName();
 		String saveTaskTypeName = saveTaskType.getTaskJsonName();
@@ -396,9 +494,9 @@ public class TaskService
 			return;
 		}
 
-		for (TaskFromStruct task : getTasks())
+		for (ITask task : getTasks())
 		{
-			ConfigTaskSave configTaskSave = saveData.get(task.getStructId());
+			ConfigTaskSave configTaskSave = saveData.get(task.getTaskId());
 			if (configTaskSave == null)
 			{
 				continue;
@@ -407,15 +505,15 @@ public class TaskService
 		}
 	}
 
-	public List<TaskFromStruct> getTasksFromVarpId(Integer varpId)
+	public List<ITask> getTasksFromVarpId(Integer varpId)
 	{
 		int varpIndex = getCurrentTaskType().getTaskVarps().indexOf(varpId);
 		int minTaskId = varpIndex * 32;
 		int maxTaskId = minTaskId + 32;
 
 		return getTasks().stream().filter(t -> {
-			int taskId = t.getIntParam("id");
-			return taskId >= minTaskId && taskId <= maxTaskId;
+			int taskBitIndex = t.getVarpIndex();
+			return taskBitIndex >= minTaskId && taskBitIndex <= maxTaskId;
 		}).collect(Collectors.toList());
 	}
 
@@ -523,11 +621,11 @@ public class TaskService
 		return routeInEditMode;
 	}
 
-	/** Finds a task by its struct ID. Returns null if not found. */
-	public TaskFromStruct getTaskByStructId(Integer taskStructId)
+	/** Finds a task by its task ID. Returns null if not found. */
+	public ITask getTaskById(Integer taskId)
 	{
 		return tasks.stream()
-			.filter(t -> t.getStructId().equals(taskStructId))
+			.filter(t -> Integer.valueOf(t.getTaskId()).equals(taskId))
 			.findFirst()
 			.orElse(null);
 	}

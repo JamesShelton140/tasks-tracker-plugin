@@ -43,9 +43,9 @@ import net.reldo.taskstracker.data.route.ShortestPathService;
 import net.reldo.taskstracker.data.jsondatastore.reader.DataStoreReader;
 import net.reldo.taskstracker.data.jsondatastore.reader.HttpDataStoreReader;
 import net.reldo.taskstracker.data.reldo.ReldoImport;
-import net.reldo.taskstracker.data.task.TaskFromStruct;
+import net.reldo.taskstracker.data.task.ITask;
+import net.reldo.taskstracker.data.task.ITaskType;
 import net.reldo.taskstracker.data.task.TaskService;
-import net.reldo.taskstracker.data.task.TaskType;
 import net.reldo.taskstracker.data.task.filters.FilterMatcher;
 import net.reldo.taskstracker.data.task.filters.FilterService;
 import net.reldo.taskstracker.data.task.filters.TextMatcher;
@@ -81,7 +81,6 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.LinkBrowser;
 
 @Slf4j
 @PluginDescriptor(
@@ -92,16 +91,24 @@ public class TasksTrackerPlugin extends Plugin
 	public static final String CONFIG_GROUP_NAME = "tasks-tracker";
 
 	public int[] playerSkills;
+	public int[] playerXp;
 
 	public TextMatcher taskTextMatcher;
 
 	public TasksTrackerPluginPanel pluginPanel;
 
+	private Set<Skill> dirtyXpSkills = new HashSet<>();
+	private Set<Integer> dirtyProgressVarpIds = new HashSet<>();
+	private Set<Integer> dirtyProgressVarbitIds = new HashSet<>();
 	private static final long VARP_UPDATE_THROTTLE_DELAY_MS = 7 * 1000;
+	private static final long XP_PROGRESS_UPDATE_DELAY_MS = 10 * 1000;
+	private static final long VAR_PROGRESS_UPDATE_DELAY_MS = 5 * 1000;
 
 	private boolean forceUpdateVarpsFlag = false;
 	private Set<Integer> varpIdsToUpdate = new HashSet<>();
 	private long lastVarpUpdate = 0;
+	private long lastXpProgressUpdate = 0;
+	private long lastVarProgressUpdate = 0;
 	private NavigationButton navButton;
 	private RuneScapeProfileType currentProfileType;
 	private final Map<Skill, Integer> oldExperience = new EnumMap<>(Skill.class);
@@ -143,6 +150,7 @@ public class TasksTrackerPlugin extends Plugin
 	@Getter
 	@Inject
 	private TaskService taskService;
+	@Getter
 	@Inject
 	private RouteManager routeManager;
 	@Inject
@@ -192,15 +200,8 @@ public class TasksTrackerPlugin extends Plugin
 		keyManager.registerKeyListener(completeCustomKeyListener);
 		keyManager.registerKeyListener(randomTaskKeyListener);
 
-		try
-		{
-			String taskTypeJsonName = config.taskTypeJsonName();
-			taskService.setTaskType(taskTypeJsonName);
-		}
-		catch (Exception ex)
-		{
-			log.error("error setting task type in startUp", ex);
-		}
+		// Pre-warm filter configs off-EDT so later type switches can read from cache
+		CompletableFuture.runAsync(() -> filterService.preloadFilterConfigs());
 
 		forceUpdateVarpsFlag = false;
 
@@ -231,10 +232,10 @@ public class TasksTrackerPlugin extends Plugin
 	{
 		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", "");
 		shortestPathService.clearGps();
-		pluginPanel.saveCurrentTabFilters();
 		pluginPanel.hideLoggedInPanel();
 		pluginPanel = null;
 		taskService.clearTaskTypes();
+		filterService.clearFilterConfigs();
 		clientToolbar.removeNavigation(navButton);
 		overlayManager.remove(overlay);
 		keyManager.unregisterKeyListener(completeCustomKeyListener);
@@ -280,11 +281,23 @@ public class TasksTrackerPlugin extends Plugin
 			return;
 		}
 		int varpId = varbitChanged.getVarpId();
-		if (!taskService.isVarpInCurrentTaskType(varpId))
+		if (taskService.isVarpInCurrentTaskType(varpId))
 		{
-			return;
+			varpIdsToUpdate.add(varpId);
 		}
-		varpIdsToUpdate.add(varbitChanged.getVarpId());
+
+		if (taskService.isProgressVarpInCurrentTaskType(varpId))
+		{
+			taskService.updateProgressVarp(varpId, varbitChanged.getValue());
+			dirtyProgressVarpIds.add(varpId);
+		}
+
+		int varbitId = varbitChanged.getVarbitId();
+		if (varbitId > 0 && taskService.isProgressVarbitInCurrentTaskType(varbitId))
+		{
+			taskService.updateProgressVarbit(varbitId, varbitChanged.getValue());
+			dirtyProgressVarbitIds.add(varbitId);
+		}
 	}
 
 	@Subscribe
@@ -298,7 +311,7 @@ public class TasksTrackerPlugin extends Plugin
 		log.debug("onConfigChanged {} {}", configChanged.getKey(), configChanged.getNewValue());
 		if (configChanged.getKey().equals("untrackUponCompletion"))
 		{
-			SwingUtilities.invokeLater(pluginPanel::refreshAllPanels);
+			refreshAllTasks(); // todo - change to refresh all panels
 
 			if (config.untrackUponCompletion())
 			{
@@ -308,12 +321,19 @@ public class TasksTrackerPlugin extends Plugin
 
 		if (configChanged.getKey().equals("filterPanelCollapsible"))
 		{
-			SwingUtilities.invokeLater(pluginPanel::redraw);
+			redraw();
 		}
 
 		if (configChanged.getKey().equals("showRandomTaskButton"))
 		{
-			SwingUtilities.invokeLater(pluginPanel::redraw);
+			redraw();
+		}
+
+		if (configChanged.getKey().equals("progressBarDisplay")
+			|| configChanged.getKey().equals("overlayProgressBarDisplay")
+			|| configChanged.getKey().equals("showProgressBarsForCompletedTasks"))
+		{
+			refreshAllTasks();
 		}
 
 		if (configChanged.getKey().startsWith("tab")) // task list tab config items all start 'tab#'
@@ -401,19 +421,39 @@ public class TasksTrackerPlugin extends Plugin
 			log.debug("forceUpdateVarpsFlag game tick {} {}", forceUpdateVarpsFlag, taskService.isTaskTypeChanged());
 			trackerRSProfileConfigStore.loadCurrentTaskTypeFromConfig();
 			forceVarpUpdate();
+			forceTaskProgressUpdate();
 			updateFilterMatcher();
 			SwingUtilities.invokeLater(() -> pluginPanel.drawNewTaskType());
 			forceUpdateVarpsFlag = false;
 			taskService.setTaskTypeChanged(false);
 		}
 
-		// Flush throttled varp updates
 		long currentTimeEpoch = System.currentTimeMillis();
 		if (currentTimeEpoch - lastVarpUpdate > VARP_UPDATE_THROTTLE_DELAY_MS)
 		{
 			flushVarpUpdates(varpIdsToUpdate);
 			varpIdsToUpdate = new HashSet<>();
 			lastVarpUpdate = currentTimeEpoch;
+		}
+
+		if (currentTimeEpoch - lastXpProgressUpdate > XP_PROGRESS_UPDATE_DELAY_MS && !dirtyXpSkills.isEmpty() )
+		{
+			Set<Skill> toFlush = dirtyXpSkills;
+			dirtyXpSkills.clear();
+			lastXpProgressUpdate = currentTimeEpoch;
+			SwingUtilities.invokeLater(() ->
+				toFlush.forEach(s -> pluginPanel.taskListPanel.refreshProgressBarsForSkill(s)));
+		}
+
+		if (currentTimeEpoch - lastVarProgressUpdate > VAR_PROGRESS_UPDATE_DELAY_MS && (!dirtyProgressVarpIds.isEmpty() || !dirtyProgressVarbitIds.isEmpty()))
+		{
+			Set<Integer> varpsToFlush = dirtyProgressVarpIds;
+			Set<Integer> varbitsToFlush = dirtyProgressVarbitIds;
+			dirtyProgressVarpIds = new HashSet<>();
+			dirtyProgressVarbitIds = new HashSet<>();
+			lastVarProgressUpdate = currentTimeEpoch;
+			SwingUtilities.invokeLater(() ->
+				pluginPanel.taskListPanel.refreshProgressBarsForVars(varpsToFlush, varbitsToFlush));
 		}
 	}
 
@@ -429,6 +469,9 @@ public class TasksTrackerPlugin extends Plugin
 			playerSkills = client.getRealSkillLevels();
 		}
 
+		// Cache all skill XP for progress bar reads
+		playerXp = client.getSkillExperiences();
+
 		final Skill skill = statChanged.getSkill();
 
 		// Modified from m0bilebtw's modification from Nightfirecat's virtual level ups plugin
@@ -438,6 +481,9 @@ public class TasksTrackerPlugin extends Plugin
 		final int levelBefore = xpBefore == -1 ? -1 : Experience.getLevelForXp(xpBefore);
 
 		oldExperience.put(skill, xpAfter);
+
+		// Mark skill dirty so the game-tick flush can update progress bars
+		dirtyXpSkills.add(skill);
 
 		// Do not proceed if any of the following are true:
 		//  * xpBefore == -1              (don't fire when first setting new known value)
@@ -465,7 +511,11 @@ public class TasksTrackerPlugin extends Plugin
 
 	public void refreshAllTasks()
 	{
-		SwingUtilities.invokeLater(() -> pluginPanel.refreshAllTasks());
+		if (taskService.isTaskTypeChangeInProgress())
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(pluginPanel::refreshAllTasks);
 	}
 
 	public void reloadTaskType()
@@ -475,19 +525,7 @@ public class TasksTrackerPlugin extends Plugin
 		try
 		{
 			String taskTypeJsonName = config.taskTypeJsonName();
-			taskService.setTaskType(taskTypeJsonName).thenAccept(isSet -> {
-				if (!isSet)
-				{
-					return;
-				}
-				updateFilterMatcher();
-				SwingUtilities.invokeLater(() ->
-				{
-					pluginPanel.drawNewTaskType();
-					pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
-					pluginPanel.refreshAllPanels();
-				});
-			});
+			taskService.setTaskType(taskTypeJsonName);
 		}
 		catch (Exception ex)
 		{
@@ -556,7 +594,7 @@ public class TasksTrackerPlugin extends Plugin
 		}
 		catch (Exception ex)
 		{
-			this.showMessageBox("Import Tasks Error", "There was an issue importing task tracker data. " + ex.getMessage(), JOptionPane.ERROR_MESSAGE, false);
+			this.showMessageBox("Import Tasks Error", "There was an issue importing task tracker data. " + ex.getMessage(), JOptionPane.ERROR_MESSAGE);
 			log.error("There was an issue importing task tracker data.", ex);
 			log.debug("reldoImport json: {}", clipboard);
 			return;
@@ -564,7 +602,7 @@ public class TasksTrackerPlugin extends Plugin
 
 		if (reldoImport.taskTypeName == null || !reldoImport.taskTypeName.equalsIgnoreCase(config.taskTypeJsonName()))
 		{
-			this.showMessageBox("Import Tasks Error", "Wrong task type. Ensure selected task type and data field match before importing data.", JOptionPane.ERROR_MESSAGE, false);
+			this.showMessageBox("Import Tasks Error", "Wrong task type. Ensure selected task type and data field match before importing data.", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -581,11 +619,11 @@ public class TasksTrackerPlugin extends Plugin
 
 		if (selectedValue.equals(JOptionPane.YES_OPTION))
 		{
-			HashMap<Integer, TaskFromStruct> tasksById = new HashMap<>();
+			HashMap<Integer, ITask> tasksById = new HashMap<>();
 			taskService.getTasks().forEach((task) -> tasksById.put(task.getIntParam("id"), task));
 
 			reldoImport.getTasks().forEach((id, reldoTaskSave) -> {
-				TaskFromStruct task = tasksById.get(id);
+				ITask task = tasksById.get(id);
 				task.loadReldoSave(reldoTaskSave);
 			});
 
@@ -671,7 +709,7 @@ public class TasksTrackerPlugin extends Plugin
 			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
 
 			String message = "Copied " + taskService.getCurrentTaskType().getName() + " data to clipboard!";
-			showMessageBox("Data Exported!", message, JOptionPane.INFORMATION_MESSAGE, true);
+			showMessageBox("Data Exported!", message, JOptionPane.INFORMATION_MESSAGE);
 		});
 	}
 
@@ -683,6 +721,28 @@ public class TasksTrackerPlugin extends Plugin
 			{
 				log.debug("forceVarpUpdate processed complete, saving");
 				saveCurrentTaskTypeData();
+			}
+		});
+	}
+
+	public void forceTaskProgressUpdate()
+	{
+		Set<Integer> varpIds = taskService.getProgressVarpIds();
+		Set<Integer> varbitIds = taskService.getProgressVarbitIds();
+
+		if (varpIds.isEmpty() && varbitIds.isEmpty())
+		{
+			return;
+		}
+
+		clientThread.invoke(() -> {
+			for (int id : varpIds)
+			{
+				taskService.updateProgressVarp(id, client.getVarpValue(id));
+			}
+			for (int id : varbitIds)
+			{
+				taskService.updateProgressVarbit(id, client.getVarbitValue(id));
 			}
 		});
 	}
@@ -699,37 +759,49 @@ public class TasksTrackerPlugin extends Plugin
 		}));
 	}
 
-	private CompletableFuture<Boolean> processTaskStatus(TaskFromStruct task)
+	private CompletableFuture<Boolean> processTaskStatus(ITask task, boolean captureLocation)
 	{
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 		clientThread.invoke(() -> {
-			int taskId = task.getIntParam("id");
-			int varbitIndex = taskId / 32;
-			int bitIndex = taskId % 32;
+			int taskVarpIndex = task.getVarpIndex();
+			int varbitIndex = taskVarpIndex / 32;
+			int bitIndex = taskVarpIndex % 32;
 			try
 			{
-				int varpId = task.getTaskType().getTaskVarps().get(varbitIndex);
+				List<Integer> taskVarps = task.getTaskType().getTaskVarps();
+				if (varbitIndex < 0 || varbitIndex >= taskVarps.size())
+				{
+					future.complete(task.isCompleted());
+					return;
+				}
+				int varpId = taskVarps.get(varbitIndex);
 				BigInteger varpValue = BigInteger.valueOf(client.getVarpValue(varpId));
 				boolean isTaskCompleted = varpValue.testBit(bitIndex);
+				boolean wasCompleted = task.isCompleted();
 				task.setCompleted(isTaskCompleted);
 				if (isTaskCompleted)
 				{
+					if (captureLocation && !wasCompleted && task.getCompletionLocation() == null
+						&& client.getLocalPlayer() != null)
+					{
+						task.setCompletionLocation(client.getLocalPlayer().getWorldLocation());
+					}
 					if (config.untrackUponCompletion())
 					{
 						task.setTracked(false);
 					}
 
-					if (config.unpinUponCompletion() && Objects.equals(config.pinnedTaskId(), task.getStructId()))
+					if (config.unpinUponCompletion() && Objects.equals(config.pinnedTaskId(), task.getTaskId()))
 					{
 						configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", 0);
 					}
 				}
-				log.debug("process taskFromStruct {} ({}) {}", task.getStringParam("name"), task.getIntParam("id"), isTaskCompleted);
+				log.debug("process task {} ({}) {}", task.getName(), task.getVarpIndex(), isTaskCompleted);
 				future.complete(isTaskCompleted);
 			}
 			catch (Exception ex)
 			{
-				log.error("Error processing task status {}", taskId, ex);
+				log.error("Error processing task status {}", taskVarpIndex, ex);
 				future.completeExceptionally(ex);
 			}
 		});
@@ -746,14 +818,15 @@ public class TasksTrackerPlugin extends Plugin
 	{
 		log.info("processVarpAndUpdateTasks: " + (varpId != null ? varpId : "all"));
 
-		List<TaskFromStruct> tasks = varpId != null ?
+		List<ITask> tasks = varpId != null ?
 			taskService.getTasksFromVarpId(varpId) :
 			taskService.getTasks();
 
 		List<CompletableFuture<Boolean>> taskFutures = new ArrayList<>();
-		for (TaskFromStruct task : tasks)
+		boolean shouldCaptureLocation = varpId != null;
+		for (ITask task : tasks)
 		{
-			CompletableFuture<Boolean> taskFuture = processTaskStatus(task);
+			CompletableFuture<Boolean> taskFuture = processTaskStatus(task, shouldCaptureLocation);
 			taskFutures.add(taskFuture);
 		}
 
@@ -774,7 +847,7 @@ public class TasksTrackerPlugin extends Plugin
 
 	private String getCurrentTaskTypeExportJson()
 	{
-		TaskType taskType = taskService.getCurrentTaskType();
+		ITaskType taskType = taskService.getCurrentTaskType();
 		Gson gson = GsonFactory.newBuilder(this.gson).create();
 
 		if (taskType == null)
@@ -790,37 +863,13 @@ public class TasksTrackerPlugin extends Plugin
 		}
 	}
 
-	private void showMessageBox(final String title, final String message, int messageType, boolean showOpenLeagueTools)
+	private void showMessageBox(final String title, final String message, int messageType)
 	{
 		SwingUtilities.invokeLater(() -> {
-			JOptionPane optionPane;
-			JDialog dialog;
-
-			if (showOpenLeagueTools)
-			{
-				String[] options = {"Open OS League Tools", "Ok"};
-
-				optionPane = new JOptionPane(message, messageType, JOptionPane.YES_NO_OPTION, null, options, options[1]);
-			}
-			else
-			{
-				optionPane = new JOptionPane(message, messageType);
-			}
-
-			dialog = optionPane.createDialog(pluginPanel, title);
+			JOptionPane optionPane = new JOptionPane(message, messageType);
+			JDialog dialog = optionPane.createDialog(pluginPanel, title);
 			dialog.setAlwaysOnTop(true);
 			dialog.setVisible(true);
-
-			Object selectedValue = optionPane.getValue();
-			if (selectedValue == null)
-			{
-				return;
-			}
-
-			if (selectedValue.equals("Open OS League Tools"))
-			{
-				LinkBrowser.browse("https://www.osleague.tools/tracker?open=import&tab=tasks");
-			}
 		});
 	}
 
@@ -913,16 +962,28 @@ public class TasksTrackerPlugin extends Plugin
 
 	public void redraw()
 	{
-		pluginPanel.redraw();
+		if (taskService.isTaskTypeChangeInProgress())
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(pluginPanel::redraw);
 	}
 
 	public void redrawTaskList()
 	{
-		pluginPanel.redrawTaskList();
+		if (taskService.isTaskTypeChangeInProgress())
+		{
+			return;
+		}
+		SwingUtilities.invokeLater(pluginPanel::redrawTaskList);
 	}
 
 	public void refreshAllPanels()
 	{
+		if (taskService.isTaskTypeChangeInProgress())
+		{
+			return;
+		}
 		SwingUtilities.invokeLater(() -> pluginPanel.refreshAllPanels());
 	}
 
@@ -944,8 +1005,8 @@ public class TasksTrackerPlugin extends Plugin
 		pluginPanel.forceRouteMode();
 	}
 
-	public void enableTaskTypeDropdown()
+	public void setTaskTypeDropdownEnabled(boolean enabled)
 	{
-		pluginPanel.enableTaskTypeDropdown();
+		pluginPanel.setTaskTypeDropdownEnabled(enabled);
 	}
 }

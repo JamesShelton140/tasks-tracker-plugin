@@ -75,14 +75,50 @@ public interface TasksTrackerConfig extends Config
 
 	@ConfigItem(
 		position = 50,
-		keyName = "completeCustomKey",
+		keyName = "completeCustomTaskKey",
 		name = "Complete Custom Task",
 		description = "When you press this key you'll complete the current custom task.",
 		section = generalSettings
 	)
 	default Keybind completeCustomKey()
 	{
-		return new Keybind(KeyEvent.VK_SPACE, InputEvent.SHIFT_DOWN_MASK);
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		position = 60,
+		keyName = "progressBarDisplay",
+		name = "Task Panel Progress Bars",
+		description = "Controls how task progress bars are displayed in the task panel. \"With Label\" shows the bar with current/target text. \"No Label\" shows only the bar. \"Compact\" shows a slim bar with no label.",
+		section = generalSettings
+	)
+	default ConfigValues.ProgressBarDisplay progressBarDisplay()
+	{
+		return ConfigValues.ProgressBarDisplay.FULL;
+	}
+
+	@ConfigItem(
+		position = 61,
+		keyName = "overlayProgressBarDisplay",
+		name = "Overlay Progress Bars",
+		description = "Controls how task progress bars are displayed in the overlay.",
+		section = generalSettings
+	)
+	default ConfigValues.OverlayProgressBarDisplay overlayProgressBarDisplay()
+	{
+		return ConfigValues.OverlayProgressBarDisplay.FULL;
+	}
+
+	@ConfigItem(
+		position = 62,
+		keyName = "showProgressBarsForCompletedTasks",
+		name = "Show Progress Bars for Completed Tasks",
+		description = "Show progress bars on tasks that have already been completed.",
+		section = generalSettings
+	)
+	default boolean showProgressBarsForCompletedTasks()
+	{
+		return false;
 	}
 
 

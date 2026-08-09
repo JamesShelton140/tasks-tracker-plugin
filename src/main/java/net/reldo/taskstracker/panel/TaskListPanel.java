@@ -25,11 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
+import net.reldo.taskstracker.data.jsondatastore.types.TaskProgressDefinition;
+import net.reldo.taskstracker.data.jsondatastore.types.ProgressType;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.route.CustomRouteItem;
 import net.reldo.taskstracker.data.route.RouteItem;
 import net.reldo.taskstracker.data.route.RouteSection;
-import net.reldo.taskstracker.data.task.TaskFromStruct;
+import net.reldo.taskstracker.data.task.ITask;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.panel.components.FixedWidthPanel;
 import net.reldo.taskstracker.panel.components.SectionHeaderPanel;
@@ -161,7 +163,7 @@ public class TaskListPanel extends JScrollPane
 			.collect(Collectors.toList()));
 	}
 
-	public void refreshMultipleTasks(Collection<TaskFromStruct> tasks)
+	public void refreshMultipleTasks(Collection<ITask> tasks)
 	{
 		log.debug("TaskListPanel.refreshMultipleTasks {}", tasks.size());
 		if (!SwingUtilities.isEventDispatchThread())
@@ -169,7 +171,7 @@ public class TaskListPanel extends JScrollPane
 			log.error("Task list panel refresh failed - not event dispatch thread.");
 			return;
 		}
-		for (TaskFromStruct task : tasks)
+		for (ITask task : tasks)
 		{
 			refresh(task, true);
 		}
@@ -179,13 +181,13 @@ public class TaskListPanel extends JScrollPane
 		}
 	}
 
-	public void refreshTask(TaskFromStruct task)
+	public void refreshTask(ITask task)
 	{
 		log.debug("TaskListPanel.refreshTask {}", task.getName());
 		refresh(task, false);
 	}
 
-	private void refresh(TaskFromStruct task, boolean delayPriorityTaskRefresh)
+	private void refresh(ITask task, boolean delayPriorityTaskRefresh)
 	{
 		if (!SwingUtilities.isEventDispatchThread())
 		{
@@ -200,7 +202,7 @@ public class TaskListPanel extends JScrollPane
 
 		emptyTasks.setVisible(false);
 
-		TaskPanel panel = taskPanelsByStructId.get(task.getStructId());
+		TaskPanel panel = taskPanelsByStructId.get(task.getTaskId());
 		if (panel != null)
 		{
 			refreshTaskPanel(panel);
@@ -243,7 +245,7 @@ public class TaskListPanel extends JScrollPane
 			return;
 		}
 
-		RouteSection section = activeRoute.getSectionForTask(panel.task.getStructId());
+		RouteSection section = activeRoute.getSectionForTask(panel.task.getTaskId());
 		if (section == null)
 		{
 			panel.setVisible(false);
@@ -428,6 +430,46 @@ public class TaskListPanel extends JScrollPane
 			.forEach(TaskPanel::refresh);
 	}
 
+	public void refreshProgressBarsForSkill(Skill skill)
+	{
+		taskPanelsByStructId.values().stream()
+			.filter(tp -> !tp.task.isCompleted())
+			.filter(tp ->
+			{
+				List<TaskProgressDefinition> defs = tp.task.getTaskDefinition().getProgress();
+				if (defs == null || defs.isEmpty())
+				{
+					return false;
+				}
+				return defs.stream().anyMatch(d ->
+					(d.getType() == ProgressType.EXPERIENCE || d.getType() == ProgressType.LEVEL)
+					&& skill.getName().equalsIgnoreCase(d.getSkill()));
+			})
+			.forEach(TaskPanel::refreshProgressBars);
+	}
+
+	public void refreshProgressBarsForVars(Set<Integer> varpIds, Set<Integer> varbitIds)
+	{
+		if (varpIds.isEmpty() && varbitIds.isEmpty())
+		{
+			return;
+		}
+		taskPanelsByStructId.values().stream()
+			.filter(tp -> !tp.task.isCompleted())
+			.filter(tp ->
+			{
+				List<TaskProgressDefinition> defs = tp.task.getTaskDefinition().getProgress();
+				if (defs == null || defs.isEmpty())
+				{
+					return false;
+				}
+				return defs.stream().anyMatch(d ->
+					(d.getType() == ProgressType.VARP && d.getId() != null && varpIds.contains(d.getId()))
+					|| (d.getType() == ProgressType.VARBIT && d.getId() != null && varbitIds.contains(d.getId())));
+			})
+			.forEach(TaskPanel::refreshProgressBars);
+	}
+
 	public void updatePriorityPanelAfterRefresh()
 	{
 		forceUpdatePriorityTaskFlag = false;
@@ -476,7 +518,7 @@ public class TaskListPanel extends JScrollPane
 			if (activeRoute != null)
 			{
 				WorldPoint routeLocation = activeRoute.getFlattenedItems().stream()
-					.filter(item -> item.isTask() && taskPanel.task.getStructId().equals(item.getTaskId()))
+					.filter(item -> item.isTask() && item.getTaskId().equals(taskPanel.task.getTaskId()))
 					.map(RouteItem::getLocation)
 					.filter(java.util.Objects::nonNull)
 					.findFirst()
@@ -601,7 +643,7 @@ public class TaskListPanel extends JScrollPane
 			if (comp instanceof TaskPanel && comp.isVisible())
 			{
 				TaskPanel panel = (TaskPanel) comp;
-				ids.add(panel.task.getStructId());
+				ids.add(panel.task.getTaskId());
 			}
 		}
 
@@ -619,10 +661,10 @@ public class TaskListPanel extends JScrollPane
 			.filter(Component::isVisible)
 			.collect(Collectors.toList());
 		int randomIndex = ThreadLocalRandom.current().nextInt(visibleTasks.size());
-		int randomTaskId = visibleTasks.get(randomIndex).task.getStructId();
+		int randomTaskId = visibleTasks.get(randomIndex).task.getTaskId();
 
 		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", randomTaskId);
-		SwingUtilities.invokeLater(plugin::redrawTaskList);
+		plugin.redrawTaskList();
 	}
 
 	private class TaskListListPanel extends FixedWidthPanel
@@ -668,7 +710,7 @@ public class TaskListPanel extends JScrollPane
 				sectionHeaderPanels.clear();
 				customItemPanels.clear();
 
-				List<TaskFromStruct> tasks = taskService.getTasks();
+				List<ITask> tasks = taskService.getTasks();
 				if (tasks == null || tasks.isEmpty())
 				{
 					emptyTasks.setVisible(true);
@@ -682,11 +724,11 @@ public class TaskListPanel extends JScrollPane
 
 				processInBatches(tasks.size(), indexPosition ->
 				{
-					TaskFromStruct task = tasks.get(indexPosition);
+					ITask task = tasks.get(indexPosition);
 					TaskPanel taskPanel = new TaskPanel(plugin, task, plugin.getFilterMatcher(), dragAndDropPane);
 					dragAndDropPane.add(taskPanel);
 					newTaskPanels.add(taskPanel);
-					taskPanelsByStructId.put(task.getStructId(), taskPanel);
+					taskPanelsByStructId.put(task.getTaskId(), taskPanel);
 					if (indexPosition == (batchSize - 1))
 					{
 						taskPanels = newTaskPanels; // replace taskPanels list at end of first batch
@@ -722,7 +764,7 @@ public class TaskListPanel extends JScrollPane
 
 				redrawListItems();
 
-				SwingUtilities.invokeLater(TaskListPanel.this::refreshAllPanels);
+				refreshAllPanels();
 			}
 			else
 			{
@@ -917,8 +959,8 @@ public class TaskListPanel extends JScrollPane
 			}
 			else
 			{
-				plugin.enableTaskTypeDropdown();
-				SwingUtilities.invokeLater(this::redraw);
+				plugin.setTaskTypeDropdownEnabled(true);
+				redraw();
 			}
 		}
 
@@ -939,7 +981,7 @@ public class TaskListPanel extends JScrollPane
 				TaskPanel taskPanel = (TaskPanel) panel;
 				String panelType = "TaskPanel";
 
-				moveRouteItemPanel(panel, activeRoute, RouteItem.forTask(taskPanel.task.getStructId()), panelType);
+				moveRouteItemPanel(panel, activeRoute, RouteItem.forTask(taskPanel.task.getTaskId()), panelType);
 			}
 
 			if (panel.getClass().equals(CustomItemPanel.class))

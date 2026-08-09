@@ -2,13 +2,13 @@ package net.reldo.taskstracker.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
@@ -44,12 +44,17 @@ import net.reldo.taskstracker.TasksTrackerPlugin;
 import net.reldo.taskstracker.config.ConfigValues;
 import net.reldo.taskstracker.data.route.CustomRoute;
 import net.reldo.taskstracker.data.jsondatastore.types.TaskDefinitionSkill;
+import net.reldo.taskstracker.data.jsondatastore.types.ProgressMode;
+import net.reldo.taskstracker.data.jsondatastore.types.ProgressType;
+import net.reldo.taskstracker.data.jsondatastore.types.TaskProgressDefinition;
+import net.reldo.taskstracker.data.task.ITask;
 import net.reldo.taskstracker.data.route.RouteEditActions;
 import net.reldo.taskstracker.data.route.RouteSection;
-import net.reldo.taskstracker.data.task.TaskFromStruct;
 import net.reldo.taskstracker.data.task.TaskService;
 import net.reldo.taskstracker.data.task.filters.FilterMatcher;
 import net.reldo.taskstracker.panel.components.ConditionalMouseDragEventForwarder;
+import net.reldo.taskstracker.panel.components.TaskProgressPanel;
+import net.reldo.taskstracker.panel.components.WrapLabel;
 import net.runelite.api.Constants;
 import net.runelite.api.Skill;
 import net.runelite.client.game.SkillIconManager;
@@ -59,7 +64,7 @@ import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
-import net.runelite.client.ui.overlay.components.TitleComponent;
+import net.runelite.client.ui.overlay.components.ProgressBarComponent;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
@@ -75,17 +80,20 @@ public class TaskPanel extends JPanel
 	private static final String REMOVE_STATE = "Remove from canvas";
 	private static final String DELETE_ICON = "\uD83D\uDDD1";
 
-	public final TaskFromStruct task;
+	private static final int LABEL_WIDTH = 157;
+
+	public final ITask task;
 
 	private final JLabel tierIcon = new JLabel();
 	private final JPanel container = new JPanel(new BorderLayout());
 	private final JPanel highlightContainer = new JPanel(new BorderLayout());
 	private final JPanel body = new JPanel(new BorderLayout());
-	private final JLabel name = new JLabel("task");
-	private final JLabel description = new JLabel("description");
+	private final WrapLabel name = new WrapLabel("task", LABEL_WIDTH);
+	private final WrapLabel description = new WrapLabel("description", LABEL_WIDTH);
 	private final JPanel buttons = new JPanel();
 	private final JToggleButton toggleTrack = new JToggleButton();
 	private final JToggleButton toggleIgnore = new JToggleButton();
+	private final JPanel progressBarsPanel = new JPanel();
 	private final JButton addButton = new JButton();
 	private final JButton deleteButton = new JButton();
 	private final JPopupMenu popupMenu;
@@ -95,7 +103,7 @@ public class TaskPanel extends JPanel
 
 	protected TasksTrackerPlugin plugin;
 
-	public TaskPanel(TasksTrackerPlugin plugin, TaskFromStruct task, FilterMatcher filterMatcher, JComponent listPanel)
+	public TaskPanel(TasksTrackerPlugin plugin, ITask task, FilterMatcher filterMatcher, JComponent listPanel)
 	{
 		setLayout(new BorderLayout());
 		this.plugin = plugin;
@@ -107,11 +115,6 @@ public class TaskPanel extends JPanel
 		ToolTipManager.sharedInstance().registerComponent(this);
 
 		refresh();
-	}
-
-	public JPopupMenu getPopupMenu()
-	{
-		return null;
 	}
 
 	public String getTaskTooltip()
@@ -160,7 +163,7 @@ public class TaskPanel extends JPanel
 			if (activeRoute != null)
 			{
 				activeRoute.getFlattenedItems().stream()
-					.filter(routeItem -> routeItem.isTask() && task.getStructId().equals(routeItem.getTaskId()))
+					.filter(routeItem -> routeItem.isTask() && routeItem.getTaskId().equals(task.getTaskId()))
 					.map(item -> item.getNote())
 					.filter(note -> note != null && !note.isEmpty())
 					.findFirst()
@@ -265,7 +268,7 @@ public class TaskPanel extends JPanel
 		deleteButton.setText(DELETE_ICON);
 		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		deleteButton.addActionListener( e -> {
-			RouteEditActions.removeTaskAction(plugin, getRouteInEditMode(), task.getStructId()).actionPerformed(e);
+			RouteEditActions.removeTaskAction(plugin, getRouteInEditMode(), task.getTaskId()).actionPerformed(e);
 		});
 		SwingUtil.removeButtonDecorations(deleteButton);
 		deleteButton.addMouseListener(new MouseAdapter()
@@ -287,7 +290,7 @@ public class TaskPanel extends JPanel
 		addButton.setText("+");
 		addButton.setBorder(new EmptyBorder(0, 0, 0, 0));
 		addButton.addActionListener(e -> {
-			RouteEditActions.addTaskAction(plugin, getRouteInEditMode(), task.getStructId()).actionPerformed(e);
+			RouteEditActions.addTaskAction(plugin, getRouteInEditMode(), task.getTaskId()).actionPerformed(e);
 		});
 		addButton.setFont(FontManager.getRunescapeSmallFont());
 		SwingUtil.removeButtonDecorations(addButton);
@@ -339,6 +342,9 @@ public class TaskPanel extends JPanel
 		highlightContainer.add(container, BorderLayout.NORTH);
 		add(highlightContainer, BorderLayout.NORTH);
 
+		progressBarsPanel.setLayout(new BoxLayout(progressBarsPanel, BoxLayout.Y_AXIS));
+		highlightContainer.add(progressBarsPanel, BorderLayout.SOUTH);
+
 		setComponentPopupMenu(popupMenu);
 	}
 
@@ -367,7 +373,7 @@ public class TaskPanel extends JPanel
 
 		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
 		removeTaskFromRoute.addActionListener(e -> {
-			RouteEditActions.removeTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getStructId()).actionPerformed(e);
+			RouteEditActions.removeTaskAction(plugin, plugin.getTaskService().getActiveRoute(), task.getTaskId()).actionPerformed(e);
 		});
 		popupMenu.add(removeTaskFromRoute);
 
@@ -380,7 +386,7 @@ public class TaskPanel extends JPanel
 			{
 				if (!plugin.isRouteMode())
 				{
-					boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getStructId());
+					boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getTaskId());
 					pinTaskItem.setText(isPinnedTask ? UNPIN_STATE : PIN_STATE);
 					pinTaskItem.setVisible(true);
 
@@ -407,7 +413,7 @@ public class TaskPanel extends JPanel
 						for (RouteSection section : sections)
 						{
 							JMenuItem addTaskToRoute = new JMenuItem("Add to - " + section.getName());
-							addTaskToRoute.addActionListener(RouteEditActions.addTaskToSectionAction(plugin, editModeRoute, section.getId(), task.getStructId()));
+							addTaskToRoute.addActionListener(RouteEditActions.addTaskToSectionAction(plugin, editModeRoute, section.getId(), task.getTaskId()));
 							sectionsMenuItems.add(addTaskToRoute);
 							popupMenu.add(addTaskToRoute);
 						}
@@ -479,7 +485,7 @@ public class TaskPanel extends JPanel
 
 	private void togglePinTaskPanel()
 	{
-		boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getStructId());
+		boolean isPinnedTask = plugin.getConfig().pinnedTaskId().equals(task.getTaskId());
 
 		if (isPinnedTask)
 		{
@@ -493,14 +499,14 @@ public class TaskPanel extends JPanel
 
 	private void pinTaskPanel()
 	{
-		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", task.getStructId());
-		SwingUtilities.invokeLater(plugin::redrawTaskList);
+		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", task.getTaskId());
+		plugin.redrawTaskList();
 	}
 
 	private void unpinTaskPanel()
 	{
 		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "pinnedTaskId", 0);
-		SwingUtilities.invokeLater(plugin::redrawTaskList);
+		plugin.redrawTaskList();
 	}
 
 	private CustomRoute getRouteInEditMode()
@@ -509,6 +515,7 @@ public class TaskPanel extends JPanel
 		{
 			return null;
 		}
+
 
 		TaskService taskService = plugin.getTaskService();
 		return taskService.getRouteInEditMode();
@@ -521,7 +528,7 @@ public class TaskPanel extends JPanel
 		if (isVisible())
 		{
 			boolean isRouteMode = plugin.isRouteMode();
-			if (!isRouteMode && plugin.getConfig().pinnedTaskId().equals(task.getStructId()))
+			if (!isRouteMode && plugin.getConfig().pinnedTaskId().equals(task.getTaskId()))
 			{
 				highlightContainer.setBorder(new LineBorder(ColorScheme.BRAND_ORANGE));
 			}
@@ -530,30 +537,23 @@ public class TaskPanel extends JPanel
 				highlightContainer.setBorder(new EmptyBorder(0, 0, 0, 0));
 			}
 			setBackgroundColor(getTaskBackgroundColor());
-			name.setText(HtmlUtil.wrapWithHtml(task.getName()));
-			description.setText(HtmlUtil.wrapWithHtml(task.getDescription()));
+			name.setText(task.getName());
+			String desc = task.getDescription();
+			description.setText(desc != null ? desc : "");
 
 			// If completed tasks are auto-untracked, don't allow users to add them to tracked tasks, that's silly.
 			boolean disableTrack = plugin.getConfig().untrackUponCompletion() && task.isCompleted();
 			toggleTrack.setEnabled(!disableTrack);
 
-			// Tell the user why it's greyed out
-			if (disableTrack)
-			{
-				toggleTrack.setToolTipText("Completed tasks cannot be tracked while 'Untrack Tasks Upon Completion' is enabled.");
-			}
-			else
-			{
-				toggleTrack.setToolTipText(null);
-			}
-
 			toggleTrack.setSelected(task.isTracked());
 			toggleIgnore.setSelected(task.isIgnored());
+
+			refreshProgressBars();
 
 			// Change button visibility in edit mode
 			boolean editingActiveRoute = plugin.getTaskService().activeRouteInEditMode();
 			CustomRoute routeInEditMode = getRouteInEditMode();
-			boolean taskInEditRoute = routeInEditMode != null && routeInEditMode.contains(task.getStructId());
+			boolean taskInEditRoute = routeInEditMode != null && routeInEditMode.contains(task.getTaskId());
 			toggleTrack.setVisible(!plugin.isRouteEditMode());
 			toggleIgnore.setVisible(!plugin.isRouteEditMode());
 			addButton.setVisible(
@@ -582,7 +582,7 @@ public class TaskPanel extends JPanel
 				return false;
 			}
 
-			return activeRoute.getFlattenedOrder().contains(task.getStructId());
+			return activeRoute.getFlattenedOrder().contains(task.getTaskId());
 		}
 		return filterMatcher.meetsFilterCriteria(task, plugin.taskTextMatcher);
 	}
@@ -592,6 +592,33 @@ public class TaskPanel extends JPanel
 		container.setBackground(color);
 		body.setBackground(color);
 		buttons.setBackground(color);
+	}
+
+	public void refreshProgressBars()
+	{
+		progressBarsPanel.removeAll();
+
+		ConfigValues.ProgressBarDisplay displayMode = plugin.getConfig().progressBarDisplay();
+		List<TaskProgressDefinition> progressDefs = task.getTaskDefinition().getProgress();
+
+		boolean completedAllowed = task.isCompleted() && plugin.getConfig().showProgressBarsForCompletedTasks();
+		boolean showBars = displayMode != ConfigValues.ProgressBarDisplay.NONE
+			&& (!task.isCompleted() || completedAllowed)
+			&& progressDefs != null
+			&& !progressDefs.isEmpty();
+
+		if (!showBars)
+		{
+			progressBarsPanel.setVisible(false);
+			return;
+		}
+
+		boolean compact = displayMode == ConfigValues.ProgressBarDisplay.COMPACT;
+		boolean withText = displayMode == ConfigValues.ProgressBarDisplay.FULL;
+		int barHeight = compact ? 6 : 12;
+
+		progressBarsPanel.add(new TaskProgressPanel(plugin, task, progressDefs, barHeight, withText));
+		progressBarsPanel.setVisible(true);
 	}
 
 	@Override
@@ -605,6 +632,11 @@ public class TaskPanel extends JPanel
 	{
 		JToolTip customTooltip = new JToolTip();
 		customTooltip.setFont(FontManager.getRunescapeSmallFont());
+		customTooltip.addMouseWheelListener(e ->
+		{
+			MouseWheelEvent eventForTarget = (MouseWheelEvent) SwingUtilities.convertMouseEvent((Component) e.getSource(), e, this);
+			this.dispatchEvent(eventForTarget);
+		});
 		return customTooltip;
 	}
 
@@ -672,10 +704,10 @@ public class TaskPanel extends JPanel
 		return " - " + points + " points";
 	}
 
-	public void buildOverlayText(Graphics2D graphics, PanelComponent panelComponent)
+	public void buildOverlayText(PanelComponent panelComponent)
 	{
 
-		TaskFromStruct task = this.task;
+		ITask task = this.task;
 
 		if (plugin.getConfig().dynamicOverlayPanelColourEnabled())
 		{
@@ -693,13 +725,9 @@ public class TaskPanel extends JPanel
 		}
 
 		// Title
-		final FontMetrics fontMetrics = graphics.getFontMetrics();
-		int panelWidth = Math.max(ComponentConstants.STANDARD_WIDTH, fontMetrics.stringWidth(task.getName()) +
-			ComponentConstants.STANDARD_BORDER + ComponentConstants.STANDARD_BORDER);
-
-		panelComponent.setPreferredSize(new Dimension(panelWidth, 0));
-		panelComponent.getChildren().add(TitleComponent.builder()
-			.text(task.getName())
+		panelComponent.setPreferredSize(new Dimension(ComponentConstants.STANDARD_WIDTH, 0));
+		panelComponent.getChildren().add(LineComponent.builder()
+			.left(task.getName())
 			.build());
 
 		// Description
@@ -758,6 +786,9 @@ public class TaskPanel extends JPanel
 				}
 			}
 		}
+
+		// Progress Bars
+		buildOverlayProgressSection(panelComponent);
 	}
 
 	private void buildOverlaySkillSection(PanelComponent panelComponent)
@@ -793,6 +824,97 @@ public class TaskPanel extends JPanel
 			}
 
 			panelComponent.getChildren().add(getSkillRequirementLineComponent(requiredSkill.getSkill().toLowerCase(), playerLevel, requiredLevel));
+		}
+	}
+
+	private void buildOverlayProgressSection(PanelComponent panelComponent)
+	{
+		List<TaskProgressDefinition> progressDefs = task.getTaskDefinition().getProgress();
+		boolean completedAllowed = task.isCompleted() && plugin.getConfig().showProgressBarsForCompletedTasks();
+		if (progressDefs == null || progressDefs.isEmpty() || (task.isCompleted() && !completedAllowed))
+		{
+			return;
+		}
+
+		ConfigValues.OverlayProgressBarDisplay displayMode = plugin.getConfig().overlayProgressBarDisplay();
+		if (displayMode == ConfigValues.OverlayProgressBarDisplay.NONE)
+		{
+			return;
+		}
+
+		panelComponent.getChildren().add(LineComponent.builder().build());
+		ProgressMode progressMode = task.getTaskDefinition().getProgressMode();
+		if (progressMode == ProgressMode.SUM)
+		{
+			int totalCurrent = 0;
+			int totalTarget = 0;
+			for (TaskProgressDefinition def : progressDefs)
+			{
+				totalCurrent += getProgressCurrentValue(def);
+				totalTarget += def.getTarget();
+			}
+			ProgressBarComponent bar = new ProgressBarComponent();
+			bar.setMinimum(0);
+			bar.setMaximum(totalTarget);
+			bar.setValue(totalCurrent);
+			bar.setLabelDisplayMode(displayMode.labelDisplayMode);
+			bar.setForegroundColor(new Color(0, 168, 0));
+			panelComponent.getChildren().add(bar);
+		}
+		else
+		{
+			for (TaskProgressDefinition def : progressDefs)
+			{
+				int current = getProgressCurrentValue(def);
+				int target = def.getTarget();
+
+				ProgressBarComponent bar = new ProgressBarComponent();
+				bar.setMinimum(0);
+				bar.setMaximum(target);
+				bar.setValue(current);
+				bar.setLabelDisplayMode(displayMode.labelDisplayMode);
+				bar.setForegroundColor(new Color(0, 168, 0));
+				panelComponent.getChildren().add(bar);
+			}
+		}
+	}
+
+	private int getProgressCurrentValue(TaskProgressDefinition def)
+	{
+		switch (def.getType())
+		{
+			case EXPERIENCE:
+				if (plugin.playerXp == null) return 0;
+				try
+				{
+					Skill skill = Skill.valueOf(def.getSkill().toUpperCase());
+					return plugin.playerXp[skill.ordinal()];
+				}
+				catch (IllegalArgumentException | NullPointerException ex)
+				{
+					log.warn("Unknown skill for EXPERIENCE progress: {}", def.getSkill());
+					return 0;
+				}
+			case LEVEL:
+				if (plugin.playerSkills == null) return 0;
+				try
+				{
+					Skill skill = Skill.valueOf(def.getSkill().toUpperCase());
+					return plugin.playerSkills[skill.ordinal()];
+				}
+				catch (IllegalArgumentException | NullPointerException ex)
+				{
+					log.warn("Unknown skill for LEVEL progress: {}", def.getSkill());
+					return 0;
+				}
+			case VARP:
+				if (def.getId() == null) return 0;
+				return task.getProgressValue(ProgressType.VARP, def.getId());
+			case VARBIT:
+				if (def.getId() == null) return 0;
+				return task.getProgressValue(ProgressType.VARBIT, def.getId());
+			default:
+				return 0;
 		}
 	}
 

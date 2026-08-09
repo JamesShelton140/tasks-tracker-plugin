@@ -12,7 +12,8 @@ import net.runelite.api.coords.WorldPoint;
 public class TaskDefinition
 {
 	/**
-	 * Struct id for task data
+	 * Struct ID for struct-based tasks.
+	 * Used as the stable save key. Null for DBROW-based tasks.
 	 */
 	private Integer structId;
 
@@ -20,6 +21,12 @@ public class TaskDefinition
 	 * Sort id based on the sort order in the game's UI
 	 */
 	private Integer sortId;
+
+	/**
+	 * DBRow ID for DBROW-based tasks (action dbrow ID).
+	 * Used as the stable save key. Null for struct-based tasks.
+	 */
+	private Integer dbRowId;
 
 	/**
 	 * Skills required for the task.
@@ -50,4 +57,17 @@ public class TaskDefinition
 	 * Used as GPS fallback when no route location is set.
 	 */
 	private WorldPoint location;
+
+	/**
+	 * Progress bars to display on the task panel for incomplete tasks.
+	 * Each entry describes one bar (type, source, and target value).
+	 */
+	private List<TaskProgressDefinition> progress;
+
+	/**
+	 * Controls how multiple progress bars are displayed.
+	 * SEPARATE (default/null): each bar is shown individually.
+	 * SUM: all bar values and targets are summed into one bar.
+	 */
+	private ProgressMode progressMode;
 }

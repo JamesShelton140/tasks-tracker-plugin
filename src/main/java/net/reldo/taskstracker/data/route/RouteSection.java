@@ -95,7 +95,7 @@ public class RouteSection
 		return getTaskIds().size();
 	}
 
-	/** Returns the number of tasks (not including custom items) in this section. */
+	/** Returns the total number of items (tasks + custom items) in this section. */
 	public int getItemCount()
 	{
 		return getItems().size();
