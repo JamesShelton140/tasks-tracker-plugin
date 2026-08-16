@@ -65,7 +65,8 @@ public class CustomRoute
 
 	public boolean contains(int taskId)
 	{
-		return getFlattenedOrder().contains(taskId);
+		return sections.stream()
+			.anyMatch(s -> s.containsTask(taskId));
 	}
 
 	public RouteSection getSectionForTask(int taskId)

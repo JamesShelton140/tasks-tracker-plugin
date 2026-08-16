@@ -479,8 +479,15 @@ public class LoggedInPanel extends JPanel
 
 		// Route edit panel (visible only when sort is "Route" and selected route is in edit mode)
 		routeEditPanel = new RouteEditPanel(plugin, taskService);
+		routeEditPanel.addStopEditListener(e ->
+		{
+			boolean activeRouteInEditMode = taskService.activeRouteInEditMode();
+			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getId());
+		});
 		routeEditPanel.addAddSectionListener(e ->
 			RouteEditActions.addNewSectionAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
+		routeEditPanel.addAddCustomListener(e ->
+			RouteEditActions.addNewCustomItemAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
 		routeEditPanel.setAlignmentX(LEFT_ALIGNMENT);
 
 		northPanel.add(getTitleAndButtonPanel());

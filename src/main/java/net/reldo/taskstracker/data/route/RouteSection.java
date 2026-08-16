@@ -86,7 +86,14 @@ public class RouteSection
 	/** Returns true if this section contains the given task ID. */
 	public boolean containsTask(int taskId)
 	{
-		return getTaskIds().contains(taskId);
+		for (RouteItem item : getItems())
+		{
+			if (item.isTask() && item.getTaskId() == taskId)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Returns the number of tasks (not including custom items) in this section. */

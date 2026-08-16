@@ -582,7 +582,7 @@ public class TaskPanel extends JPanel
 				return false;
 			}
 
-			return activeRoute.getFlattenedOrder().contains(task.getTaskId());
+			return activeRoute.contains(task.getTaskId());
 		}
 		return filterMatcher.meetsFilterCriteria(task, plugin.taskTextMatcher);
 	}

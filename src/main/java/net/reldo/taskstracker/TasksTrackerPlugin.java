@@ -199,6 +199,7 @@ public class TasksTrackerPlugin extends Plugin
 	{
 		keyManager.registerKeyListener(completeCustomKeyListener);
 		keyManager.registerKeyListener(randomTaskKeyListener);
+		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", "");
 
 		// Pre-warm filter configs off-EDT so later type switches can read from cache
 		CompletableFuture.runAsync(() -> filterService.preloadFilterConfigs());
