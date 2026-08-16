@@ -449,6 +449,8 @@ public class LoggedInPanel extends JPanel
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 			String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 
+			boolean redrawTriggered = plugin.stopEditingActiveRoute();
+
 			// Save selection
 			plugin.getTrackerGlobalConfigStore().saveActiveRouteId(currentTab, taskType, selectedId);
 
@@ -459,7 +461,10 @@ public class LoggedInPanel extends JPanel
 			taskService.setActiveRoute(currentTab, route);
 
 			// Redraw
-			taskListPanel.redraw();
+			if (!redrawTriggered)
+			{
+				taskListPanel.redraw();
+			}
 		});
 
 		routeSelector.addManageListener(e -> showRouteManagementMenu());
@@ -479,11 +484,7 @@ public class LoggedInPanel extends JPanel
 
 		// Route edit panel (visible only when sort is "Route" and selected route is in edit mode)
 		routeEditPanel = new RouteEditPanel(plugin, taskService);
-		routeEditPanel.addStopEditListener(e ->
-		{
-			boolean activeRouteInEditMode = taskService.activeRouteInEditMode();
-			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getId());
-		});
+		routeEditPanel.addStopEditListener(e -> plugin.editRoute(""));
 		routeEditPanel.addAddSectionListener(e ->
 			RouteEditActions.addNewSectionAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
 		routeEditPanel.addAddCustomListener(e ->
@@ -663,7 +664,7 @@ public class LoggedInPanel extends JPanel
 			if (routeManager.createEmptyRoute())
 			{
 				// force plugin into edit mode
-				plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", taskService.getActiveRoute().getId());
+				plugin.editRoute(taskService.getActiveRoute().getId()); // this forces a redraw
 				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
 			}
 		});
@@ -692,7 +693,7 @@ public class LoggedInPanel extends JPanel
 		boolean activeRouteInEditMode = taskService.activeRouteInEditMode();
 		JMenuItem editorItem = new JMenuItem(activeRouteInEditMode ? "Stop Editing" : "Edit Route");
 		editorItem.addActionListener(e -> {
-			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", activeRouteInEditMode ? "" : taskService.getActiveRoute().getId());
+			plugin.editRoute(activeRouteInEditMode ? "" : taskService.getActiveRoute().getId());
 		});
 		editorItem.setEnabled(routeSelector.getSelectedRouteId() != null);
 

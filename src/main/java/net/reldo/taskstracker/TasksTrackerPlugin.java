@@ -199,7 +199,7 @@ public class TasksTrackerPlugin extends Plugin
 	{
 		keyManager.registerKeyListener(completeCustomKeyListener);
 		keyManager.registerKeyListener(randomTaskKeyListener);
-		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", "");
+		editRoute("");
 
 		// Pre-warm filter configs off-EDT so later type switches can read from cache
 		CompletableFuture.runAsync(() -> filterService.preloadFilterConfigs());
@@ -231,7 +231,7 @@ public class TasksTrackerPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", "");
+		editRoute("");
 		shortestPathService.clearGps();
 		pluginPanel.hideLoggedInPanel();
 		pluginPanel = null;
@@ -999,6 +999,22 @@ public class TasksTrackerPlugin extends Plugin
 	public boolean isRouteEditMode()
 	{
 		return !config.routeInEditMode().isEmpty();
+	}
+
+	public void editRoute(String routeId)
+	{
+		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", routeId);
+	}
+
+	public boolean stopEditingActiveRoute()
+	{
+		if (taskService.activeRouteInEditMode())
+		{
+			editRoute("");
+			return true;
+		}
+
+		return false;
 	}
 
 	public void forceRouteMode()

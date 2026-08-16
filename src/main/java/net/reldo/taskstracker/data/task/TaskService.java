@@ -585,7 +585,7 @@ public class TaskService
 						&& entry.getValue() != null
 						&& entry.getValue().getId().equals(config.routeInEditMode()))
 				.findFirst()
-				.ifPresent(entry -> configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", ""));
+				.ifPresent(entry -> plugin.editRoute(""));
 		}
 	}
 
