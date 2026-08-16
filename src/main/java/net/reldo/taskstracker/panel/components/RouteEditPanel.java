@@ -1,6 +1,7 @@
 package net.reldo.taskstracker.panel.components;
 
 import java.awt.BorderLayout;
+import java.awt.Container;
 import java.awt.event.ActionListener;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -85,6 +86,22 @@ public class RouteEditPanel extends JPanel
 
 	public void redraw()
 	{
-		setVisible(taskService.activeRouteInEditMode());
+		boolean visible = plugin.isRouteMode() && taskService.activeRouteInEditMode();
+		if (visible == isVisible())
+		{
+			return;
+		}
+
+		setVisible(visible);
+
+		// setVisible only invalidates - the containing panel has to be revalidated for the
+		// layout to close or open the gap. Revalidating this panel would be a no-op when
+		// hiding it, as an invisible component is never added to the repaint manager.
+		Container parent = getParent();
+		if (parent != null)
+		{
+			parent.revalidate();
+			parent.repaint();
+		}
 	}
 }

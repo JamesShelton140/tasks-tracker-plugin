@@ -79,6 +79,9 @@ public class LoggedInPanel extends JPanel
 	// Route selector
 	private RouteEditPanel routeEditPanel;
 
+	// Holds the controls above the task list, several of which show and hide with the sort mode
+	private JPanel northPanel;
+
 	// sub-filter panel
 	private SubFilterPanel subFilterPanel;
 	private JPanel subFilterWrapper;
@@ -408,7 +411,7 @@ public class LoggedInPanel extends JPanel
 
 	private JPanel getNorthPanel()
 	{
-		JPanel northPanel = new JPanel();
+		northPanel = new JPanel();
 		BoxLayout layout = new BoxLayout(northPanel, BoxLayout.Y_AXIS);
 		northPanel.setLayout(layout);
 		northPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -468,6 +471,10 @@ public class LoggedInPanel extends JPanel
 				: null;
 			taskService.setActiveRoute(currentTab, route);
 
+			// Explicit refresh - edit mode stays on when the route is still open on another
+			// tab, so there is no config change to trigger a north panel redraw
+			routeEditPanel.redraw();
+
 			// Redraw - coalesced with the redraw any edit mode change above triggered
 			plugin.redrawTaskList();
 		});
@@ -518,7 +525,7 @@ public class LoggedInPanel extends JPanel
 		subFilterWrapper.setVisible(!isRouteMode);
 		searchPanel.setVisible(!isRouteMode);
 		randomButtonPanel.setVisible(!isRouteMode && config.showRandomTaskButton());
-		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
+		routeEditPanel.redraw();
 
 		return northPanel;
 	}
@@ -609,6 +616,9 @@ public class LoggedInPanel extends JPanel
 				: null;
 			taskService.setActiveRoute(currentTab, activeRoute);
 		}
+
+		// The active route just changed, so the edit panel may need to show or hide
+		routeEditPanel.redraw();
 	}
 
 	public void forceRouteMode()
@@ -630,7 +640,6 @@ public class LoggedInPanel extends JPanel
 	{
 		boolean isRouteMode = sortPanel.isRouteMode();
 		routeSelector.setVisible(isRouteMode);
-		routeEditPanel.setVisible(isRouteMode && taskService.activeRouteInEditMode());
 		subFilterWrapper.setVisible(!isRouteMode);
 		searchPanel.setVisible(!isRouteMode);
 		randomButtonPanel.setVisible(!isRouteMode && config.showRandomTaskButton());
@@ -647,6 +656,13 @@ public class LoggedInPanel extends JPanel
 			taskService.clearActiveRoute(currentTab);
 			plugin.getShortestPathService().clearGps();
 		}
+
+		// Must run last - depends on the active route resolved for the new sort mode
+		routeEditPanel.redraw();
+
+		// Several components above were shown or hidden, which only invalidates the layout
+		northPanel.revalidate();
+		northPanel.repaint();
 	}
 
 	private void showRouteManagementMenu()
