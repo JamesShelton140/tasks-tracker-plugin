@@ -459,12 +459,10 @@ public class LoggedInPanel extends JPanel
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 			String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 
-			plugin.stopEditingActiveRoute();
-
 			// Save selection
 			plugin.getTrackerGlobalConfigStore().saveActiveRouteId(currentTab, taskType, selectedId);
 
-			// Update TaskService
+			// Update TaskService - exits edit mode if the previously edited route is no longer open
 			CustomRoute route = selectedId != null
 				? plugin.getTrackerGlobalConfigStore().getActiveRoute(currentTab, taskType)
 				: null;
@@ -643,7 +641,8 @@ public class LoggedInPanel extends JPanel
 		}
 		else
 		{
-			// Clear active route so tasks aren't filtered
+			// Clear active route so tasks aren't filtered - also exits edit mode if the
+			// edited route is no longer open on any tab
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 			taskService.clearActiveRoute(currentTab);
 			plugin.getShortestPathService().clearGps();

@@ -1107,17 +1107,6 @@ public class TasksTrackerPlugin extends Plugin
 		configManager.setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "routeInEditMode", routeId);
 	}
 
-	public boolean stopEditingActiveRoute()
-	{
-		if (taskService.activeRouteInEditMode())
-		{
-			editRoute("");
-			return true;
-		}
-
-		return false;
-	}
-
 	public void forceRouteMode()
 	{
 		pluginPanel.forceRouteMode();

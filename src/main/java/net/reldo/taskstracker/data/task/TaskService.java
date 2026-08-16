@@ -528,7 +528,7 @@ public class TaskService
 	 */
 	public void setActiveRoute(ConfigValues.TaskListTabs tab, CustomRoute route)
 	{
-		if (!Objects.equals(route, getActiveRoute()))
+		if (!Objects.equals(route, getActiveRoute(tab)))
 		{
 			exitEditModeIfRouteClosed(tab);
 		}
@@ -579,13 +579,16 @@ public class TaskService
 		if (activeRouteInEditMode(tab))
 		{
 			TasksTrackerConfig config = configManager.getConfig(TasksTrackerConfig.class);
-			tabActiveRoutes.entrySet().stream()
-				.filter(entry ->
+			boolean openOnAnotherTab = tabActiveRoutes.entrySet().stream()
+				.anyMatch(entry ->
 					entry.getKey() != tab
 						&& entry.getValue() != null
-						&& entry.getValue().getId().equals(config.routeInEditMode()))
-				.findFirst()
-				.ifPresent(entry -> plugin.editRoute(""));
+						&& entry.getValue().getId().equals(config.routeInEditMode()));
+
+			if (!openOnAnotherTab)
+			{
+				plugin.editRoute("");
+			}
 		}
 	}
 
