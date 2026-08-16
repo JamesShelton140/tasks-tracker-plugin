@@ -90,6 +90,24 @@ public class TasksTrackerPlugin extends Plugin
 {
 	public static final String CONFIG_GROUP_NAME = "tasks-tracker";
 
+	/**
+	 * Panel update levels, ordered from cheapest to most thorough. Every level performs all of the
+	 * work of the levels below it, so several requests made before the event queue is drained can be
+	 * collapsed into a single call to the strongest one.
+	 */
+	private enum PanelUpdate
+	{
+		REFRESH_TASKS,
+		REFRESH_PANELS,
+		REDRAW_TASK_LIST,
+		REDRAW,
+		DRAW_NEW_TASK_TYPE
+	}
+
+	private final Object panelUpdateLock = new Object();
+	private PanelUpdate pendingPanelUpdate = null;
+	private boolean pendingFilterButtonRefresh = false;
+
 	public int[] playerSkills;
 	public int[] playerXp;
 
@@ -309,76 +327,67 @@ public class TasksTrackerPlugin extends Plugin
 			return;
 		}
 
-		log.debug("onConfigChanged {} {}", configChanged.getKey(), configChanged.getNewValue());
-		if (configChanged.getKey().equals("untrackUponCompletion"))
+		if (pluginPanel == null)
 		{
-			refreshAllTasks(); // todo - change to refresh all panels
-
-			if (config.untrackUponCompletion())
-			{
-				forceVarpUpdate();
-			}
+			return;
 		}
 
-		if (configChanged.getKey().equals("filterPanelCollapsible"))
-		{
-			redraw();
-		}
+		String key = configChanged.getKey();
+		log.debug("onConfigChanged {} {}", key, configChanged.getNewValue());
 
-		if (configChanged.getKey().equals("showRandomTaskButton"))
+		// Task list tab config items all start 'tab#'
+		if (key.startsWith("tab"))
 		{
-			redraw();
-		}
-
-		if (configChanged.getKey().equals("progressBarDisplay")
-			|| configChanged.getKey().equals("overlayProgressBarDisplay")
-			|| configChanged.getKey().equals("showProgressBarsForCompletedTasks"))
-		{
-			refreshAllTasks();
-		}
-
-		if (configChanged.getKey().startsWith("tab")) // task list tab config items all start 'tab#'
-		{
-			pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
+			refreshFilterButtons();
 			refreshAllPanels();
+			return;
 		}
 
-		if (configChanged.getKey().equals("taskPanelBatchSize"))
+		switch (key)
 		{
-			pluginPanel.taskListPanel.setBatchSize(config.taskPanelBatchSize());
-		}
+			case "untrackUponCompletion":
+				refreshAllTasks(); // todo - change to refresh all panels
 
-		if (configChanged.getKey().equals("showOverlay"))
-		{
-			if (config.showOverlay())
-			{
-				overlayManager.add(overlay);
-			}
-			else
-			{
-				overlayManager.remove(overlay);
-			}
-			pluginPanel.taskListPanel.updatePriorityPanelAfterRefresh();
-		}
-
-		if (configChanged.getKey().equals("useShortestPath"))
-		{
-			pluginPanel.taskListPanel.updatePriorityPanelAfterRefresh();
-		}
-
-		if (configChanged.getKey().equals("sortCriteria"))
-		{
-			pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
-		}
-
-		if (configChanged.getKey().equals("hideRouteModeButton"))
-		{
-			pluginPanel.hideRouteModeButton(config.hideRouteModeButton());
-		}
-
-		if (configChanged.getKey().equals("routeInEditMode"))
-		{
-			SwingUtilities.invokeLater(pluginPanel::redraw);
+				if (config.untrackUponCompletion())
+				{
+					forceVarpUpdate();
+				}
+				break;
+			case "filterPanelCollapsible":
+			case "showRandomTaskButton":
+			case "routeInEditMode":
+				redraw();
+				break;
+			case "progressBarDisplay":
+			case "overlayProgressBarDisplay":
+			case "showProgressBarsForCompletedTasks":
+				refreshAllTasks();
+				break;
+			case "taskPanelBatchSize":
+				pluginPanel.taskListPanel.setBatchSize(config.taskPanelBatchSize());
+				break;
+			case "showOverlay":
+				if (config.showOverlay())
+				{
+					overlayManager.add(overlay);
+				}
+				else
+				{
+					overlayManager.remove(overlay);
+				}
+				SwingUtilities.invokeLater(pluginPanel.taskListPanel::updatePriorityPanelAfterRefresh);
+				break;
+			case "useShortestPath":
+				SwingUtilities.invokeLater(pluginPanel.taskListPanel::updatePriorityPanelAfterRefresh);
+				break;
+			case "sortCriteria":
+				refreshFilterButtons();
+				break;
+			case "hideRouteModeButton":
+				SwingUtilities.invokeLater(() -> pluginPanel.hideRouteModeButton(config.hideRouteModeButton()));
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -424,7 +433,7 @@ public class TasksTrackerPlugin extends Plugin
 			forceVarpUpdate();
 			forceTaskProgressUpdate();
 			updateFilterMatcher();
-			SwingUtilities.invokeLater(() -> pluginPanel.drawNewTaskType());
+			drawNewTaskType();
 			forceUpdateVarpsFlag = false;
 			taskService.setTaskTypeChanged(false);
 		}
@@ -512,11 +521,7 @@ public class TasksTrackerPlugin extends Plugin
 
 	public void refreshAllTasks()
 	{
-		if (taskService.isTaskTypeChangeInProgress())
-		{
-			return;
-		}
-		SwingUtilities.invokeLater(pluginPanel::refreshAllTasks);
+		requestPanelUpdate(PanelUpdate.REFRESH_TASKS);
 	}
 
 	public void reloadTaskType()
@@ -629,7 +634,7 @@ public class TasksTrackerPlugin extends Plugin
 			});
 
 			trackerRSProfileConfigStore.saveCurrentTaskTypeData();
-			pluginPanel.redraw();
+			redraw();
 		}
 	}
 
@@ -840,7 +845,7 @@ public class TasksTrackerPlugin extends Plugin
 				}
 				else
 				{
-					SwingUtilities.invokeLater(() -> pluginPanel.refreshAllPanels());
+					refreshAllPanels();
 				}
 			})
 			.thenApply(v -> true);
@@ -963,29 +968,125 @@ public class TasksTrackerPlugin extends Plugin
 
 	public void redraw()
 	{
-		if (taskService.isTaskTypeChangeInProgress())
-		{
-			return;
-		}
-		SwingUtilities.invokeLater(pluginPanel::redraw);
+		requestPanelUpdate(PanelUpdate.REDRAW);
 	}
 
 	public void redrawTaskList()
 	{
-		if (taskService.isTaskTypeChangeInProgress())
-		{
-			return;
-		}
-		SwingUtilities.invokeLater(pluginPanel::redrawTaskList);
+		requestPanelUpdate(PanelUpdate.REDRAW_TASK_LIST);
 	}
 
 	public void refreshAllPanels()
 	{
-		if (taskService.isTaskTypeChangeInProgress())
+		requestPanelUpdate(PanelUpdate.REFRESH_PANELS);
+	}
+
+	public void drawNewTaskType()
+	{
+		requestPanelUpdate(PanelUpdate.DRAW_NEW_TASK_TYPE);
+	}
+
+	/**
+	 * Queues a panel update to run on the EDT. A single action often triggers several update
+	 * requests - directly, and indirectly through the config changes it writes - so requests made
+	 * before the queued update runs are collapsed into one call to the strongest level requested.
+	 */
+	private void requestPanelUpdate(PanelUpdate update)
+	{
+		boolean scheduleUpdate;
+		synchronized (panelUpdateLock)
+		{
+			scheduleUpdate = !isUpdatePending();
+			if (pendingPanelUpdate == null || update.ordinal() > pendingPanelUpdate.ordinal())
+			{
+				pendingPanelUpdate = update;
+			}
+		}
+
+		if (scheduleUpdate)
+		{
+			SwingUtilities.invokeLater(this::runPendingPanelUpdate);
+		}
+	}
+
+	/**
+	 * Queues a refresh of the task list tab filter buttons from config. Runs before any panel update
+	 * queued alongside it, so the refreshed filters are the ones the panels are drawn with.
+	 */
+	public void refreshFilterButtons()
+	{
+		boolean scheduleUpdate;
+		synchronized (panelUpdateLock)
+		{
+			scheduleUpdate = !isUpdatePending();
+			pendingFilterButtonRefresh = true;
+		}
+
+		if (scheduleUpdate)
+		{
+			SwingUtilities.invokeLater(this::runPendingPanelUpdate);
+		}
+	}
+
+	private boolean isUpdatePending()
+	{
+		return pendingPanelUpdate != null || pendingFilterButtonRefresh;
+	}
+
+	private void runPendingPanelUpdate()
+	{
+		PanelUpdate update;
+		boolean filterButtonRefresh;
+		synchronized (panelUpdateLock)
+		{
+			update = pendingPanelUpdate;
+			filterButtonRefresh = pendingFilterButtonRefresh;
+			pendingPanelUpdate = null;
+			pendingFilterButtonRefresh = false;
+		}
+
+		if (pluginPanel == null)
+		{
+			// Plugin was shut down before the update ran
+			return;
+		}
+
+		if (filterButtonRefresh)
+		{
+			pluginPanel.refreshFilterButtonsFromConfig(config.taskListTab());
+		}
+
+		if (update == null)
 		{
 			return;
 		}
-		SwingUtilities.invokeLater(() -> pluginPanel.refreshAllPanels());
+
+		// A task type change ends by drawing the new task type, so anything queued while it is in
+		// progress would be drawn from half-loaded data and immediately replaced.
+		if (update != PanelUpdate.DRAW_NEW_TASK_TYPE && taskService.isTaskTypeChangeInProgress())
+		{
+			return;
+		}
+
+		log.debug("runPendingPanelUpdate {}", update);
+		switch (update)
+		{
+			case REFRESH_TASKS:
+				pluginPanel.refreshAllTasks();
+				break;
+			case REFRESH_PANELS:
+				pluginPanel.refreshAllPanels();
+				break;
+			case REDRAW_TASK_LIST:
+				pluginPanel.redrawTaskList();
+				break;
+			case REDRAW:
+				pluginPanel.redraw();
+				break;
+			case DRAW_NEW_TASK_TYPE:
+				pluginPanel.drawNewTaskType();
+				break;
+		}
 	}
 
 	/**

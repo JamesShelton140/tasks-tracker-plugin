@@ -11,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
@@ -348,7 +347,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 			plugin.getTrackerGlobalConfigStore().addRoute(plugin.getTaskService().getCurrentTaskType().getTaskJsonName(), activeRoute);
 			if (redraw)
 			{
-				SwingUtilities.invokeLater(plugin::redrawTaskList);
+				plugin.redrawTaskList();
 			}
 		};
 	}

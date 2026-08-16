@@ -121,32 +121,17 @@ public class LoggedInPanel extends JPanel
 			}
 		}
 
-		subFilterPanel.redraw();
-		sortPanel.redraw();
-		updateCollapseButtonText();
-		randomButtonPanel.setVisible(!plugin.isRouteMode() && config.showRandomTaskButton());
-		routeEditPanel.redraw();
+		redrawNorthPanel();
 
 		refreshRouteSelector();
+		refreshTabNames();
 		taskListPanel.drawNewTaskType();
 		refreshFilterButtonsFromConfig(config.taskListTab());
 	}
 
-	public void redraw()
-	{
-		subFilterPanel.redraw();
-		sortPanel.redraw();
-		updateCollapseButtonText();
-		randomButtonPanel.setVisible(!plugin.isRouteMode() && config.showRandomTaskButton());
-		routeEditPanel.redraw();
-
-		taskListPanel.redraw();
-	}
-
-	public void redrawTaskList()
-	{
-		taskListPanel.redraw();
-	}
+	// The update methods below are ordered weakest to strongest, and each performs all of the work of
+	// the ones above it. TasksTrackerPlugin relies on that to collapse several update requests made
+	// for the same action into a single call to the strongest one.
 
 	public void refreshAllTasks()
 	{
@@ -160,6 +145,29 @@ public class LoggedInPanel extends JPanel
 		updateCollapseButtonText();
 		refreshTabNames();
 		taskListPanel.refreshAllPanels();
+	}
+
+	public void redrawTaskList()
+	{
+		updateCollapseButtonText();
+		refreshTabNames();
+		taskListPanel.redraw();
+	}
+
+	public void redraw()
+	{
+		redrawNorthPanel();
+
+		redrawTaskList();
+	}
+
+	private void redrawNorthPanel()
+	{
+		subFilterPanel.redraw();
+		sortPanel.redraw();
+		updateCollapseButtonText();
+		randomButtonPanel.setVisible(!plugin.isRouteMode() && config.showRandomTaskButton());
+		routeEditPanel.redraw();
 	}
 
 	private void createPanel()
@@ -215,9 +223,11 @@ public class LoggedInPanel extends JPanel
 		if (newTab != null)
 		{
 			plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, "taskListTab", newTab);
-			refreshFilterButtonsFromConfig(newTab);
 			sortPanel.refreshFromConfig();
 			onSortChanged(); // handles refreshRouteSelector() when in route mode, clears route when not
+			// Queued rather than called directly so the buttons are read back after the new tab's
+			// sort criteria has been written to config
+			plugin.refreshFilterButtons();
 			plugin.redrawTaskList();
 		}
 	}
@@ -437,7 +447,7 @@ public class LoggedInPanel extends JPanel
 		subFilterWrapper.add(collapseBtn, BorderLayout.NORTH);
 		subFilterWrapper.add(subFilterPanel, BorderLayout.CENTER);
 
-		sortPanel = new SortPanel(plugin.getConfigManager(), config, taskService, taskListPanel);
+		sortPanel = new SortPanel(plugin, config, taskService);
 		sortPanel.setSortChangeCallback(this::onSortChanged);
 
 		// Route selector (visible only when sort is "Route")
@@ -449,7 +459,7 @@ public class LoggedInPanel extends JPanel
 			ConfigValues.TaskListTabs currentTab = config.taskListTab();
 			String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 
-			boolean redrawTriggered = plugin.stopEditingActiveRoute();
+			plugin.stopEditingActiveRoute();
 
 			// Save selection
 			plugin.getTrackerGlobalConfigStore().saveActiveRouteId(currentTab, taskType, selectedId);
@@ -460,11 +470,8 @@ public class LoggedInPanel extends JPanel
 				: null;
 			taskService.setActiveRoute(currentTab, route);
 
-			// Redraw
-			if (!redrawTriggered)
-			{
-				taskListPanel.redraw();
-			}
+			// Redraw - coalesced with the redraw any edit mode change above triggered
+			plugin.redrawTaskList();
 		});
 
 		routeSelector.addManageListener(e -> showRouteManagementMenu());
@@ -612,13 +619,13 @@ public class LoggedInPanel extends JPanel
 		plugin.getConfigManager().setConfiguration(TasksTrackerPlugin.CONFIG_GROUP_NAME, tabId + "SortCriteria", SortPanel.ROUTE_OPTION);
 		sortPanel.refreshFromConfig(); // Set config and refresh to avoid redundant task list redraws
 		onSortChanged(); // refreshFromConfig() suppresses callback
-		taskListPanel.redraw();
+		plugin.redrawTaskList();
 	}
 
 	private void refreshAfterRouteChange()
 	{
 		refreshRouteSelector();
-		taskListPanel.redraw();
+		plugin.redrawTaskList();
 	}
 
 	private void onSortChanged()
@@ -651,7 +658,7 @@ public class LoggedInPanel extends JPanel
 		importItem.addActionListener(e -> {
 			if (routeManager.importRouteFromClipboard())
 			{
-				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
+				refreshAfterRouteChange();
 			}
 		});
 
@@ -664,8 +671,8 @@ public class LoggedInPanel extends JPanel
 			if (routeManager.createEmptyRoute())
 			{
 				// force plugin into edit mode
-				plugin.editRoute(taskService.getActiveRoute().getId()); // this forces a redraw
-				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
+				plugin.editRoute(taskService.getActiveRoute().getId()); // this queues a redraw
+				refreshAfterRouteChange();
 			}
 		});
 
@@ -673,7 +680,7 @@ public class LoggedInPanel extends JPanel
 		deleteItem.addActionListener(e -> {
 			if (routeManager.deleteActiveRoute())
 			{
-				SwingUtilities.invokeLater(this::refreshAfterRouteChange);
+				refreshAfterRouteChange();
 			}
 		});
 		deleteItem.setEnabled(routeSelector.getSelectedRouteId() != null);

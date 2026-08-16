@@ -870,7 +870,7 @@ public class TaskListPanel extends JScrollPane
 							customPanels.put(customItemId, customPanel);
 							dragAndDropPane.add(customPanel);
 						}
-						customPanel.setCompleted(completedIds.contains(customItemId));
+						customPanel.setCompletedSilent(completedIds.contains(customItemId));
 						customPanel.setVisible(true);
 
 						int indexPosition = taskService.getCustomItemIndex(activeRoute.getId(), customItemId);

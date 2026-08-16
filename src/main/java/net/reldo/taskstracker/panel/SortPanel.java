@@ -7,7 +7,6 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerConfig;
 import net.reldo.taskstracker.TasksTrackerPlugin;
@@ -31,9 +30,9 @@ public class SortPanel extends FixedWidthPanel
 		"using the manage button (...).<br><br>" +
 		"Route Designer: coming soon</html>";
 
+	private final TasksTrackerPlugin plugin;
 	private final TasksTrackerConfig config;
 	private final TaskService taskService;
-	private final TaskListPanel taskListPanel;
 	private final ConfigManager configManager;
 	private JComboBox<String> sortDropdown;
 	private MultiToggleButton directionButton;
@@ -42,12 +41,12 @@ public class SortPanel extends FixedWidthPanel
 	private Runnable sortChangeCallback;
 	private boolean isSuppressingActionListener = false;
 
-	public SortPanel(ConfigManager configManager, TasksTrackerConfig config, TaskService taskService, TaskListPanel taskListPanel)
+	public SortPanel(TasksTrackerPlugin plugin, TasksTrackerConfig config, TaskService taskService)
 	{
+		this.plugin = plugin;
 		this.config = config;
-		this.configManager = configManager;
+		this.configManager = plugin.getConfigManager();
 		this.taskService = taskService;
-		this.taskListPanel = taskListPanel;
 
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		setAlignmentX(LEFT_ALIGNMENT);
@@ -98,7 +97,7 @@ public class SortPanel extends FixedWidthPanel
 			}
 			updateConfig();
 			updateRouteInfoVisibility();
-			SwingUtilities.invokeLater(taskListPanel::redraw);
+			plugin.redrawTaskList();
 			if (sortChangeCallback != null)
 			{
 				sortChangeCallback.run();
@@ -113,7 +112,7 @@ public class SortPanel extends FixedWidthPanel
 		directionButton.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		directionButton.setStateChangedAction(e -> {
 			updateConfig();
-			SwingUtilities.invokeLater(taskListPanel::redraw);
+			plugin.redrawTaskList();
 		});
 
 		routeInfoLabel = new JLabel("i");
