@@ -3,10 +3,13 @@ package net.reldo.taskstracker.panel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -48,6 +51,10 @@ public class CustomItemPanel extends JPanel
 	private static final Color BORDER_COLOR = new Color(90, 90, 90);
 	private static final Color BACKGROUND_DEFAULT = ColorScheme.DARKER_GRAY_COLOR;
 	private static final Color BACKGROUND_COMPLETED = new Color(40, 60, 40);
+	private static final Color DELETE_HOVER_COLOR = Color.RED;
+	private static final Color TEXT_COLOR = Color.WHITE;
+
+	private static final String DELETE_ICON = "\uD83D\uDDD1";
 
 	private static final int MAX_ICON_DIMENSION = 22;
 
@@ -61,6 +68,7 @@ public class CustomItemPanel extends JPanel
 	private final JLabel iconLabel;
 	private final JLabel nameLabel;
 	private final JToggleButton completeToggle;
+	private final JButton deleteButton = new JButton();
 
 	@Getter
 	private boolean completed = false;
@@ -119,6 +127,29 @@ public class CustomItemPanel extends JPanel
 		completeToggle.addActionListener(e -> onCompletionToggled());
 		SwingUtil.removeButtonDecorations(completeToggle);
 
+		// Delete button
+		deleteButton.setText(DELETE_ICON);
+		deleteButton.setBorder(new EmptyBorder(0, 0, 0, 0));
+		deleteButton.addActionListener( e -> {
+			RouteEditActions.removeRouteItemAction(plugin, plugin.getTaskService().getActiveRoute(), routeItem).actionPerformed(e);
+		});
+		SwingUtil.removeButtonDecorations(deleteButton);
+		deleteButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				deleteButton.setForeground(DELETE_HOVER_COLOR);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				deleteButton.setForeground(TEXT_COLOR);
+			}
+		});
+		deleteButton.setVisible(false);
+
 		JPanel body = new JPanel(new BorderLayout());
 		body.setOpaque(false);
 		body.setBorder(new EmptyBorder(0, 1, 0, 0));
@@ -129,6 +160,7 @@ public class CustomItemPanel extends JPanel
 		rightPanel.setOpaque(false);
 		rightPanel.setBorder(new EmptyBorder(0, 0, 0, 7));
 		rightPanel.add(completeToggle, BorderLayout.CENTER);
+		rightPanel.add(deleteButton, BorderLayout.SOUTH);
 
 		container.add(iconLabel, BorderLayout.WEST);
 		container.add(body, BorderLayout.CENTER);
@@ -198,26 +230,24 @@ public class CustomItemPanel extends JPanel
 	{
 		JPopupMenu popupMenu = new JPopupMenu();
 
-		JMenuItem routeEditHeader = new JMenuItem("Edit route");
-		routeEditHeader.setEnabled(false);
-		popupMenu.add(routeEditHeader);
+		JMenuItem editNoteItem = new JMenuItem("Edit Note");
+		editNoteItem.addActionListener(e -> editCustomItem("Note", routeItem.getNote(), routeItem::setNote));
 
 		JMenuItem editNameItem = new JMenuItem("Edit Name");
 		editNameItem.addActionListener(e -> editCustomItem("Name", customItem.getLabel(), customItem::setLabel));
-		popupMenu.add(editNameItem);
 
 		JMenuItem editDescriptionItem = new JMenuItem("Edit Description");
 		editDescriptionItem.addActionListener(e -> editCustomItem("Description", customItem.getDescription(), customItem::setDescription));
-		popupMenu.add(editDescriptionItem);
-
-		JMenuItem editNoteItem = new JMenuItem("Edit Note");
-		editNoteItem.addActionListener(e -> editCustomItem("Note", routeItem.getNote(), routeItem::setNote));
-		popupMenu.add(editNoteItem);
 
 		JMenuItem removeTaskFromRoute = new JMenuItem("Remove");
 		removeTaskFromRoute.addActionListener(e -> {
 			RouteEditActions.removeRouteItemAction(plugin, plugin.getTaskService().getActiveRoute(), routeItem).actionPerformed(e);
 		});
+
+		popupMenu.add(editNoteItem);
+		popupMenu.addSeparator();
+		popupMenu.add(editNameItem);
+		popupMenu.add(editDescriptionItem);
 		popupMenu.add(removeTaskFromRoute);
 
 		popupMenu.addPopupMenuListener(new PopupMenuListener()
@@ -228,18 +258,14 @@ public class CustomItemPanel extends JPanel
 			{
 				if (plugin.getTaskService().activeRouteInEditMode())
 				{
-//					routeEditHeader.setEnabled(true);
 					editNameItem.setEnabled(true);
 					editDescriptionItem.setEnabled(true);
-					editNoteItem.setEnabled(true);
 					removeTaskFromRoute.setEnabled(true);
 				}
 				else
 				{
-//					routeEditHeader.setEnabled(false);
 					editNameItem.setEnabled(false);
 					editDescriptionItem.setEnabled(false);
-					editNoteItem.setEnabled(false);
 					removeTaskFromRoute.setEnabled(false);
 				}
 			}
@@ -316,10 +342,15 @@ public class CustomItemPanel extends JPanel
 		return routeItem.getLocation();
 	}
 
-	public void refresh(Set<String> completedIds)
+	public void refresh()
 	{
-		boolean isComplete = completedIds.contains(customItem.getId());
-		setCompletedSilent(isComplete);
+		// Change button visibility in edit mode
+		boolean editingActiveRoute = plugin.isRouteEditMode() &&
+			plugin.getTaskService().activeRouteInEditMode();
+		completeToggle.setVisible(!editingActiveRoute);
+		deleteButton.setVisible(editingActiveRoute);
+
+		revalidate();
 	}
 
 	@Override

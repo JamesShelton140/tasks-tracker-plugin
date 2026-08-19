@@ -516,7 +516,6 @@ public class TaskPanel extends JPanel
 			return null;
 		}
 
-
 		TaskService taskService = plugin.getTaskService();
 		return taskService.getRouteInEditMode();
 	}

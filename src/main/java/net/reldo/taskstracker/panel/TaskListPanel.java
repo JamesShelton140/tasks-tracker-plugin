@@ -348,6 +348,7 @@ public class TaskListPanel extends JScrollPane
 					SectionHeaderPanel header = routeHeaders.get(section.getId());
 					boolean collapsed = header != null && header.isCollapsed();
 					panel.setVisible(!collapsed);
+					panel.refresh();
 				}
 				return;
 			}
