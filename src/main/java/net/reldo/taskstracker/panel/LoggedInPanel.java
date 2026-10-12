@@ -501,6 +501,8 @@ public class LoggedInPanel extends JPanel
 			RouteEditActions.addNewSectionAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
 		routeEditPanel.addAddCustomListener(e ->
 			RouteEditActions.addNewCustomItemAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
+		routeEditPanel.addAddQuestListener(e ->
+			RouteEditActions.addNewQuestItemAction(plugin, taskService.getActiveRoute()).actionPerformed(e));
 		routeEditPanel.setAlignmentX(LEFT_ALIGNMENT);
 
 		northPanel.add(getTitleAndButtonPanel());

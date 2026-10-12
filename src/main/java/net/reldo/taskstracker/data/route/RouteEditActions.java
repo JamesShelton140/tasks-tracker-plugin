@@ -2,10 +2,15 @@ package net.reldo.taskstracker.data.route;
 
 import java.awt.Component;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.UUID;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -14,6 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.reldo.taskstracker.TasksTrackerPlugin;
+import net.runelite.api.Quest;
 
 @Slf4j
 public class RouteEditActions // todo: move these to RouteManager as non-static
@@ -170,6 +176,87 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 			String description = descriptionField.getText().trim();
 			return CustomRouteItem.createCustom(label, description.isEmpty() ? null : description);
 		}
+	}
+
+	/**
+	 * Builds an action that prompts the user to pick a quest via {@link #getQuestItem(Component)}
+	 * and, if confirmed, adds the resulting quest custom item to the end of the provided route.
+	 *
+	 * @param plugin the plugin instance used to persist and redraw after the change
+	 * @param route  the route to add the quest item to
+	 * @return an action that prompts for the quest and, if confirmed, saves the route
+	 */
+	public static ActionListener addNewQuestItemAction(TasksTrackerPlugin plugin, CustomRoute route)
+	{
+		return e -> {
+			if (plugin == null || route == null)
+			{
+				return;
+			}
+
+			CustomRouteItem item = getQuestItem(plugin.pluginPanel);
+			if (item == null)
+			{
+				return;
+			}
+
+			log.debug("Adding quest item \"{}\" to route {}", item.getDescription(), route.getName());
+			if (route.addItem(RouteItem.forCustom(item)))
+			{
+				saveRoute(plugin, route, true).actionPerformed(e);
+			}
+		};
+	}
+
+	/**
+	 * Prompts the user to select a quest from a dropdown of all quests, sorted by name.
+	 *
+	 * @param parent the component to anchor the dialog to
+	 * @return a quest custom item for the selected quest, or null if the user cancelled the dialog
+	 */
+	private static CustomRouteItem getQuestItem(Component parent)
+	{
+		Quest[] quests = Arrays.stream(Quest.values())
+			.sorted(Comparator.comparing(Quest::getName, String.CASE_INSENSITIVE_ORDER))
+			.toArray(Quest[]::new);
+
+		JComboBox<Quest> questDropdown = new JComboBox<>(quests);
+		questDropdown.setMaximumRowCount(15);
+		questDropdown.setRenderer(new DefaultListCellRenderer()
+		{
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+			{
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (value instanceof Quest)
+				{
+					setText(((Quest) value).getName());
+				}
+				return this;
+			}
+		});
+
+		JPanel dialogPanel = new JPanel();
+		dialogPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
+		dialogPanel.setLayout(new BoxLayout(dialogPanel, BoxLayout.Y_AXIS));
+		dialogPanel.add(new JLabel("Quest:"));
+		dialogPanel.add(questDropdown);
+
+		int result = JOptionPane.showConfirmDialog(
+			parent,
+			dialogPanel,
+			"Add Quest",
+			JOptionPane.OK_CANCEL_OPTION,
+			JOptionPane.PLAIN_MESSAGE
+		);
+
+		Quest quest = (Quest) questDropdown.getSelectedItem();
+		if (result != JOptionPane.OK_OPTION || quest == null)
+		{
+			return null;
+		}
+
+		return CustomRouteItem.createQuest(quest.getId(), quest.getName());
 	}
 
 	/**

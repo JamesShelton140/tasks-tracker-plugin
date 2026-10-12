@@ -491,43 +491,51 @@ public class TasksTrackerPlugin extends Plugin
 			return;
 		}
 
-		// questId -> custom item ids in the active route, skipping quests already known complete
-		Map<Integer, List<String>> questItemIds = new HashMap<>();
-		for (RouteItem item : route.getFlattenedItems())
-		{
-			CustomRouteItem customItem = item.getCustomItem();
-			if (item.isTask() || customItem == null || customItem.getQuestId() == null
-				|| knownCompletedQuestIds.contains(customItem.getQuestId()))
-			{
-				continue;
-			}
-			questItemIds.computeIfAbsent(customItem.getQuestId(), k -> new ArrayList<>()).add(customItem.getId());
-		}
-		if (questItemIds.isEmpty())
-		{
-			return;
-		}
-
 		String taskType = taskService.getCurrentTaskType().getTaskJsonName();
 		String routeId = route.getId();
 		clientThread.invoke(() ->
 		{
-			Set<Integer> newlyCompleted = new HashSet<>();
-			for (Quest quest : Quest.values())
+			Set<String> completedIds = trackerGlobalConfigStore.loadCustomItemCompletion(taskType, routeId);
+			boolean changed = false;
+
+			// questId -> incomplete custom item ids in the active route whose quest state is unknown.
+			// Items for quests already known complete (e.g. added in edit mode after the quest was
+			// seen finished) are completed directly without re-checking quest state.
+			Map<Integer, List<String>> questItemIds = new HashMap<>();
+			for (RouteItem item : route.getFlattenedItems())
 			{
-				if (questItemIds.containsKey(quest.getId()) && quest.getState(client) == QuestState.FINISHED)
+				CustomRouteItem customItem = item.getCustomItem();
+				if (item.isTask() || customItem == null || customItem.getQuestId() == null
+					|| completedIds.contains(customItem.getId()))
 				{
-					newlyCompleted.add(quest.getId());
+					continue;
+				}
+				if (knownCompletedQuestIds.contains(customItem.getQuestId()))
+				{
+					completedIds.add(customItem.getId());
+					changed = true;
+					continue;
+				}
+				questItemIds.computeIfAbsent(customItem.getQuestId(), k -> new ArrayList<>()).add(customItem.getId());
+			}
+
+			if (!questItemIds.isEmpty())
+			{
+				for (Quest quest : Quest.values())
+				{
+					if (questItemIds.containsKey(quest.getId()) && quest.getState(client) == QuestState.FINISHED)
+					{
+						knownCompletedQuestIds.add(quest.getId());
+						completedIds.addAll(questItemIds.get(quest.getId()));
+						changed = true;
+					}
 				}
 			}
-			if (newlyCompleted.isEmpty())
+
+			if (!changed)
 			{
 				return;
 			}
-			knownCompletedQuestIds.addAll(newlyCompleted);
-
-			Set<String> completedIds = trackerGlobalConfigStore.loadCustomItemCompletion(taskType, routeId);
-			newlyCompleted.forEach(questId -> completedIds.addAll(questItemIds.get(questId)));
 			trackerGlobalConfigStore.saveCustomItemCompletion(taskType, routeId, completedIds);
 
 			refreshAllPanels();
