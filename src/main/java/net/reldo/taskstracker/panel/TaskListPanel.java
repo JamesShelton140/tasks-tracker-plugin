@@ -291,6 +291,7 @@ public class TaskListPanel extends JScrollPane
 				{
 					for (CustomItemPanel panel : customPanels.values())
 					{
+						panel.setCompletedSilent(completedIds.contains(panel.getCustomItemId()));
 						refreshCustomItemPanel(panel, activeRoute);
 					}
 				}
