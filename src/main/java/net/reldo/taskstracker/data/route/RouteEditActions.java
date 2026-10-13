@@ -25,8 +25,10 @@ import net.runelite.api.Quest;
 @Slf4j
 public class RouteEditActions // todo: move these to RouteManager as non-static
 {
-	private static final String CUSTOM_ITEM_TYPE = "Custom";
-	private static final String QUEST_ITEM_TYPE = "Quest";
+	// Dialog field cards;
+	private static final String CUSTOM_FIELDS_CARD = "Custom";
+	private static final String PRESET_FIELDS_CARD = "Preset";
+	private static final String QUEST_FIELDS_CARD = "Quest";
 
 	/**
 	 * Builds an action that adds a task to the end of the provided route.
@@ -141,13 +143,11 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 	 */
 	private static CustomRouteItem getCustomItem(Component parent)
 	{
-		JComboBox<String> typeDropdown = new JComboBox<>(new String[]{CUSTOM_ITEM_TYPE, QUEST_ITEM_TYPE});
+		JComboBox<CustomRouteItem.Type> typeDropdown = new JComboBox<>(CustomRouteItem.Type.values());
 
 		// Custom item fields
 		JTextField labelField = new JTextField();
-		JTextArea descriptionField = new JTextArea(3, 20);
-		descriptionField.setLineWrap(true);
-		descriptionField.setWrapStyleWord(true);
+		JTextArea customDescriptionField = createDescriptionField();
 
 		JPanel customPanel = new JPanel();
 		customPanel.setLayout(new BoxLayout(customPanel, BoxLayout.Y_AXIS));
@@ -155,8 +155,17 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 		customPanel.add(labelField);
 		customPanel.add(Box.createVerticalStrut(8));
 		customPanel.add(new JLabel("Description (optional):"));
-		JScrollPane descriptionScrollPane = new JScrollPane(descriptionField);
-		customPanel.add(descriptionScrollPane);
+		JScrollPane customDescriptionScrollPane = new JScrollPane(customDescriptionField);
+		customPanel.add(customDescriptionScrollPane);
+
+		// Preset custom item fields
+		JTextArea presetDescriptionField = createDescriptionField();
+
+		JPanel presetPanel = new JPanel();
+		presetPanel.setLayout(new BoxLayout(presetPanel, BoxLayout.Y_AXIS));
+		presetPanel.add(new JLabel("Description:"));
+		JScrollPane presetDescriptionScrollPane = new JScrollPane(presetDescriptionField);
+		presetPanel.add(presetDescriptionScrollPane);
 
 		// Quest item fields
 		JComboBox<Quest> questDropdown = createQuestDropdown();
@@ -169,9 +178,10 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 		// Show only the fields for the selected type
 		CardLayout fieldsLayout = new CardLayout();
 		JPanel fieldsPanel = new JPanel(fieldsLayout);
-		fieldsPanel.add(customPanel, CUSTOM_ITEM_TYPE);
-		fieldsPanel.add(questPanel, QUEST_ITEM_TYPE);
-		typeDropdown.addActionListener(e -> fieldsLayout.show(fieldsPanel, (String) typeDropdown.getSelectedItem()));
+		fieldsPanel.add(customPanel, CUSTOM_FIELDS_CARD);
+		fieldsPanel.add(presetPanel, PRESET_FIELDS_CARD);
+		fieldsPanel.add(questPanel, QUEST_FIELDS_CARD);
+		typeDropdown.addActionListener(e -> fieldsLayout.show(fieldsPanel, getFieldsCard((CustomRouteItem.Type) typeDropdown.getSelectedItem())));
 
 		JPanel dialogPanel = new JPanel();
 		dialogPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
@@ -185,7 +195,8 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 		typeDropdown.setAlignmentX(Component.LEFT_ALIGNMENT);
 		fieldsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		labelField.setAlignmentX(Component.LEFT_ALIGNMENT);
-		descriptionScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+		customDescriptionScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+		presetDescriptionScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
 		questDropdown.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		while (true)
@@ -203,7 +214,19 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 				return null;
 			}
 
-			if (QUEST_ITEM_TYPE.equals(typeDropdown.getSelectedItem()))
+			CustomRouteItem.Type type = (CustomRouteItem.Type) typeDropdown.getSelectedItem();
+			if (type == CustomRouteItem.Type.BANK || type == CustomRouteItem.Type.TELEPORT)
+			{
+				String description = getDescription(presetDescriptionField);
+				if (description == null)
+				{
+					JOptionPane.showMessageDialog(parent, "Description is required.", "Create Custom Task", JOptionPane.WARNING_MESSAGE);
+					continue;
+				}
+				return CustomRouteItem.create(type, description);
+			}
+
+			if (type == CustomRouteItem.Type.QUEST)
 			{
 				Quest quest = (Quest) questDropdown.getSelectedItem();
 				if (quest == null)
@@ -221,9 +244,42 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 				continue;
 			}
 
-			String description = descriptionField.getText().trim();
-			return CustomRouteItem.createCustom(label, description.isEmpty() ? null : description);
+			return CustomRouteItem.createCustom(label, getDescription(customDescriptionField));
 		}
+	}
+
+	/**
+	 * Returns the dialog field card shown for a custom item type.
+	 */
+	private static String getFieldsCard(CustomRouteItem.Type type)
+	{
+		switch (type)
+		{
+			case BANK:
+			case TELEPORT:
+				return PRESET_FIELDS_CARD;
+			case QUEST:
+				return QUEST_FIELDS_CARD;
+			default:
+				return CUSTOM_FIELDS_CARD;
+		}
+	}
+
+	private static JTextArea createDescriptionField()
+	{
+		JTextArea descriptionField = new JTextArea(3, 20);
+		descriptionField.setLineWrap(true);
+		descriptionField.setWrapStyleWord(true);
+		return descriptionField;
+	}
+
+	/**
+	 * Returns the trimmed description, or null if it is empty.
+	 */
+	private static String getDescription(JTextArea descriptionField)
+	{
+		String description = descriptionField.getText().trim();
+		return description.isEmpty() ? null : description;
 	}
 
 	/**

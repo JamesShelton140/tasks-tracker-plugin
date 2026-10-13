@@ -1,6 +1,7 @@
 package net.reldo.taskstracker.panel.components;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.event.ActionListener;
 import javax.swing.Box;
@@ -14,8 +15,8 @@ import net.runelite.client.ui.ColorScheme;
 
 public class RouteEditPanel extends JPanel
 {
-	private static final String STOP_EDIT_LABEL = "Stop Editing";
-	private static final String STOP_EDIT_TOOLTIP = "Stop editing the open route";
+	private static final String STOP_EDIT_LABEL = "Finish Editing";
+	private static final String STOP_EDIT_TOOLTIP = "Finish editing the open route";
 
 	private static final String ADD_SECTION_LABEL = "Add Section";
 	private static final String ADD_SECTION_TOOLTIP = "Add new section";
@@ -33,13 +34,13 @@ public class RouteEditPanel extends JPanel
 	{
 		this.plugin = plugin;
 		this.taskService = taskService;
-//		setLayout(new BorderLayout(5, 0));
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		stopEditButton = new JButton(STOP_EDIT_LABEL);
 		stopEditButton.setToolTipText(STOP_EDIT_TOOLTIP);
 		stopEditButton.setForeground(ColorScheme.TEXT_COLOR);
+		stopEditButton.setBackground(Color.RED.darker().darker());
 		stopEditButton.setFocusable(false);
 		addButton(stopEditButton);
 

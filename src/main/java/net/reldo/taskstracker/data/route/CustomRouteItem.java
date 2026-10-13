@@ -3,8 +3,10 @@ package net.reldo.taskstracker.data.route;
 import com.google.gson.annotations.Expose;
 import java.util.UUID;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Represents a non-task item in a route, such as a bank stop, teleport, or custom step.
@@ -15,14 +17,26 @@ import lombok.NonNull;
 @NoArgsConstructor
 public class CustomRouteItem
 {
-	/** Sprite archive ID for bank map icon. */
-	public static final int BANK_ICON_SPRITE = 1453;
+	/** Preset custom item types, each with a default label and icon.
+	 *  Generic item type 'Custom' does not have a default icon.*/
+	@Getter
+	@RequiredArgsConstructor
+	public enum Type
+	{
+		CUSTOM("Custom", null),
+		BANK("Bank", 1453 /* Bank map icon. */),
+		TELEPORT("Teleport", 1504 /* Transportation map icon. */),
+		QUEST("Quest", 835 /* Quest tab icon. */);
 
-	/** Sprite archive ID for transportation map icon. */
-	public static final int TELEPORT_ICON_SPRITE = 1504;
+		private final String label;
+		private final Integer icon;
 
-	/** Sprite archive ID for quest icon. */
-	public static final int QUEST_ICON_SPRITE = 835;
+		@Override
+		public String toString()
+		{
+			return label;
+		}
+	}
 
 	/** Unique identifier (8-char UUID prefix). Counterpart to structId/taskId. */
 	@Expose
@@ -51,7 +65,7 @@ public class CustomRouteItem
 	{
 		if (label == null || label.isEmpty())
 		{
-			return "Custom";
+			return Type.CUSTOM.getLabel();
 		}
 		return label;
 	}
@@ -61,44 +75,28 @@ public class CustomRouteItem
 		return UUID.randomUUID().toString();
 	}
 
-	public static CustomRouteItem createBank(String description)
+	/** Creates an item with the type's default label and icon. */
+	public static CustomRouteItem create(Type type, String description)
 	{
 		CustomRouteItem item = new CustomRouteItem();
 		item.setId(generateId());
-		item.setLabel("Bank");
-		item.setIcon(BANK_ICON_SPRITE);
-		item.setDescription(description);
-		return item;
-	}
-
-	public static CustomRouteItem createTeleport(String description)
-	{
-		CustomRouteItem item = new CustomRouteItem();
-		item.setId(generateId());
-		item.setLabel("Teleport");
-		item.setIcon(TELEPORT_ICON_SPRITE);
+		item.setLabel(type.getLabel());
+		item.setIcon(type.getIcon());
 		item.setDescription(description);
 		return item;
 	}
 
 	public static CustomRouteItem createQuest(Integer questId, String description)
 	{
-		CustomRouteItem item = new CustomRouteItem();
-		item.setId(generateId());
-		item.setLabel("Quest");
-		item.setIcon(QUEST_ICON_SPRITE);
-		item.setDescription(description);
+		CustomRouteItem item = create(Type.QUEST, description);
 		item.setQuestId(questId);
 		return item;
 	}
 
 	public static CustomRouteItem createCustom(String label, String description)
 	{
-		CustomRouteItem item = new CustomRouteItem();
-		item.setId(generateId());
+		CustomRouteItem item = create(Type.CUSTOM, description);
 		item.setLabel(label);
-		item.setIcon(null);
-		item.setDescription(description);
 		return item;
 	}
 }
