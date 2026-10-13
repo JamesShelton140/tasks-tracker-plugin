@@ -23,13 +23,9 @@ public class RouteEditPanel extends JPanel
 	private static final String ADD_CUSTOM_ITEM_LABEL = "Add Custom";
 	private static final String ADD_CUSTOM_ITEM_TOOLTIP = "Add new custom item";
 
-	private static final String ADD_QUEST_ITEM_LABEL = "Add Quest";
-	private static final String ADD_QUEST_ITEM_TOOLTIP = "Add new quest item";
-
 	private final JButton stopEditButton;
 	private final JButton addSectionButton;
 	private final JButton addCustomItemButton;
-	private final JButton addQuestItemButton;
 	private final TasksTrackerPlugin plugin;
 	private final TaskService taskService;
 
@@ -59,11 +55,6 @@ public class RouteEditPanel extends JPanel
 		addCustomItemButton.setFocusable(false);
 		addButton(addCustomItemButton);
 
-		addQuestItemButton = new JButton(ADD_QUEST_ITEM_LABEL);
-		addQuestItemButton.setToolTipText(ADD_QUEST_ITEM_TOOLTIP);
-		addQuestItemButton.setForeground(ColorScheme.TEXT_COLOR);
-		addQuestItemButton.setFocusable(false);
-		addButton(addQuestItemButton);
 	}
 
 	private void addButton(JButton button)
@@ -91,11 +82,6 @@ public class RouteEditPanel extends JPanel
 	public void addAddCustomListener(ActionListener listener)
 	{
 		addCustomItemButton.addActionListener(listener);
-	}
-
-	public void addAddQuestListener(ActionListener listener)
-	{
-		addQuestItemButton.addActionListener(listener);
 	}
 
 	public void redraw()

@@ -1,5 +1,6 @@
 package net.reldo.taskstracker.data.route;
 
+import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
@@ -24,6 +25,9 @@ import net.runelite.api.Quest;
 @Slf4j
 public class RouteEditActions // todo: move these to RouteManager as non-static
 {
+	private static final String CUSTOM_ITEM_TYPE = "Custom";
+	private static final String QUEST_ITEM_TYPE = "Quest";
+
 	/**
 	 * Builds an action that adds a task to the end of the provided route.
 	 *
@@ -98,7 +102,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 	}
 
 	/**
-	 * Builds an action that prompts the user for a label and description via
+	 * Builds an action that prompts the user for a custom or quest item via
 	 * {@link #getCustomItem(Component)} and, if confirmed, adds the resulting custom item
 	 * to the end of the provided route.
 	 *
@@ -129,27 +133,60 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 	}
 
 	/**
-	 * Prompts the user for a custom item's label and description. Label is required and the
-	 * dialog re-prompts until one is given or the user cancels; description is optional.
+	 * Prompts the user for a custom item. A dropdown at the top switches between types
+	 * of custom item. Any data entered into fields not shown for selected type are ignored.
 	 *
 	 * @param parent the component to anchor the dialog to
-	 * @return the entered custom item, or null if the user cancelled the dialog
+	 * @return the created custom item, or null if the user cancelled the dialog
 	 */
 	private static CustomRouteItem getCustomItem(Component parent)
 	{
+		JComboBox<String> typeDropdown = new JComboBox<>(new String[]{CUSTOM_ITEM_TYPE, QUEST_ITEM_TYPE});
+
+		// Custom item fields
 		JTextField labelField = new JTextField();
 		JTextArea descriptionField = new JTextArea(3, 20);
 		descriptionField.setLineWrap(true);
 		descriptionField.setWrapStyleWord(true);
 
+		JPanel customPanel = new JPanel();
+		customPanel.setLayout(new BoxLayout(customPanel, BoxLayout.Y_AXIS));
+		customPanel.add(new JLabel("Label:"));
+		customPanel.add(labelField);
+		customPanel.add(Box.createVerticalStrut(8));
+		customPanel.add(new JLabel("Description (optional):"));
+		JScrollPane descriptionScrollPane = new JScrollPane(descriptionField);
+		customPanel.add(descriptionScrollPane);
+
+		// Quest item fields
+		JComboBox<Quest> questDropdown = createQuestDropdown();
+
+		JPanel questPanel = new JPanel();
+		questPanel.setLayout(new BoxLayout(questPanel, BoxLayout.Y_AXIS));
+		questPanel.add(new JLabel("Quest:"));
+		questPanel.add(questDropdown);
+
+		// Show only the fields for the selected type
+		CardLayout fieldsLayout = new CardLayout();
+		JPanel fieldsPanel = new JPanel(fieldsLayout);
+		fieldsPanel.add(customPanel, CUSTOM_ITEM_TYPE);
+		fieldsPanel.add(questPanel, QUEST_ITEM_TYPE);
+		typeDropdown.addActionListener(e -> fieldsLayout.show(fieldsPanel, (String) typeDropdown.getSelectedItem()));
+
 		JPanel dialogPanel = new JPanel();
 		dialogPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
 		dialogPanel.setLayout(new BoxLayout(dialogPanel, BoxLayout.Y_AXIS));
-		dialogPanel.add(new JLabel("Label:"));
-		dialogPanel.add(labelField);
+		dialogPanel.add(new JLabel("Type:"));
+		dialogPanel.add(typeDropdown);
 		dialogPanel.add(Box.createVerticalStrut(8));
-		dialogPanel.add(new JLabel("Description (optional):"));
-		dialogPanel.add(new JScrollPane(descriptionField));
+		dialogPanel.add(fieldsPanel);
+
+		// Inputs default to centre alignment, which offsets the left-aligned labels in BoxLayout
+		typeDropdown.setAlignmentX(Component.LEFT_ALIGNMENT);
+		fieldsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		labelField.setAlignmentX(Component.LEFT_ALIGNMENT);
+		descriptionScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+		questDropdown.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		while (true)
 		{
@@ -166,6 +203,17 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 				return null;
 			}
 
+			if (QUEST_ITEM_TYPE.equals(typeDropdown.getSelectedItem()))
+			{
+				Quest quest = (Quest) questDropdown.getSelectedItem();
+				if (quest == null)
+				{
+					JOptionPane.showMessageDialog(parent, "Quest is required.", "Create Custom Task", JOptionPane.WARNING_MESSAGE);
+					continue;
+				}
+				return CustomRouteItem.createQuest(quest.getId(), quest.getName());
+			}
+
 			String label = labelField.getText().trim();
 			if (label.isEmpty())
 			{
@@ -179,42 +227,9 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 	}
 
 	/**
-	 * Builds an action that prompts the user to pick a quest via {@link #getQuestItem(Component)}
-	 * and, if confirmed, adds the resulting quest custom item to the end of the provided route.
-	 *
-	 * @param plugin the plugin instance used to persist and redraw after the change
-	 * @param route  the route to add the quest item to
-	 * @return an action that prompts for the quest and, if confirmed, saves the route
+	 * Creates a dropdown of all quests, sorted by name.
 	 */
-	public static ActionListener addNewQuestItemAction(TasksTrackerPlugin plugin, CustomRoute route)
-	{
-		return e -> {
-			if (plugin == null || route == null)
-			{
-				return;
-			}
-
-			CustomRouteItem item = getQuestItem(plugin.pluginPanel);
-			if (item == null)
-			{
-				return;
-			}
-
-			log.debug("Adding quest item \"{}\" to route {}", item.getDescription(), route.getName());
-			if (route.addItem(RouteItem.forCustom(item)))
-			{
-				saveRoute(plugin, route, true).actionPerformed(e);
-			}
-		};
-	}
-
-	/**
-	 * Prompts the user to select a quest from a dropdown of all quests, sorted by name.
-	 *
-	 * @param parent the component to anchor the dialog to
-	 * @return a quest custom item for the selected quest, or null if the user cancelled the dialog
-	 */
-	private static CustomRouteItem getQuestItem(Component parent)
+	private static JComboBox<Quest> createQuestDropdown()
 	{
 		Quest[] quests = Arrays.stream(Quest.values())
 			.sorted(Comparator.comparing(Quest::getName, String.CASE_INSENSITIVE_ORDER))
@@ -235,28 +250,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 				return this;
 			}
 		});
-
-		JPanel dialogPanel = new JPanel();
-		dialogPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
-		dialogPanel.setLayout(new BoxLayout(dialogPanel, BoxLayout.Y_AXIS));
-		dialogPanel.add(new JLabel("Quest:"));
-		dialogPanel.add(questDropdown);
-
-		int result = JOptionPane.showConfirmDialog(
-			parent,
-			dialogPanel,
-			"Add Quest",
-			JOptionPane.OK_CANCEL_OPTION,
-			JOptionPane.PLAIN_MESSAGE
-		);
-
-		Quest quest = (Quest) questDropdown.getSelectedItem();
-		if (result != JOptionPane.OK_OPTION || quest == null)
-		{
-			return null;
-		}
-
-		return CustomRouteItem.createQuest(quest.getId(), quest.getName());
+		return questDropdown;
 	}
 
 	/**
