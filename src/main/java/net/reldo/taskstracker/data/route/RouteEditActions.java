@@ -234,7 +234,7 @@ public class RouteEditActions // todo: move these to RouteManager as non-static
 					JOptionPane.showMessageDialog(parent, "Quest is required.", "Create Custom Task", JOptionPane.WARNING_MESSAGE);
 					continue;
 				}
-				return CustomRouteItem.createQuest(quest.getId(), quest.getName());
+				return CustomRouteItem.createQuest(quest.getId());
 			}
 
 			String label = labelField.getText().trim();

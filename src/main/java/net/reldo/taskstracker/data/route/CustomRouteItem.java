@@ -1,12 +1,14 @@
 package net.reldo.taskstracker.data.route;
 
 import com.google.gson.annotations.Expose;
+import java.util.Arrays;
 import java.util.UUID;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.runelite.api.Quest;
 
 /**
  * Represents a non-task item in a route, such as a bank stop, teleport, or custom step.
@@ -86,10 +88,17 @@ public class CustomRouteItem
 		return item;
 	}
 
-	public static CustomRouteItem createQuest(Integer questId, String description)
+	public static CustomRouteItem createQuest(Integer questId)
 	{
+		Quest quest = Arrays.stream(Quest.values())
+			.filter(questValue -> questValue.getId() == questId)
+			.findFirst()
+			.orElse(null);
+		String description = quest != null ? quest.getName() : "Unknown Quest Id";
+
 		CustomRouteItem item = create(Type.QUEST, description);
 		item.setQuestId(questId);
+
 		return item;
 	}
 
