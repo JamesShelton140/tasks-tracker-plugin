@@ -403,9 +403,10 @@ public class TaskListPanel extends JScrollPane
 				{
 					return false;
 				}
+				// OVERALL depends on every skill, but StatChanged never fires for it directly
 				return defs.stream().anyMatch(d ->
 					(d.getType() == ProgressType.EXPERIENCE || d.getType() == ProgressType.LEVEL)
-					&& skill.getName().equalsIgnoreCase(d.getSkill()));
+					&& (skill.name().equalsIgnoreCase(d.getSkill()) || Skill.OVERALL.name().equalsIgnoreCase(d.getSkill())));
 			})
 			.forEach(TaskPanel::refreshProgressBars);
 	}

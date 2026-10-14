@@ -744,11 +744,10 @@ public class TaskPanel extends JPanel
 		switch (def.getType())
 		{
 			case EXPERIENCE:
-				if (plugin.playerXp == null) return 0;
 				try
 				{
 					Skill skill = Skill.valueOf(def.getSkill().toUpperCase());
-					return plugin.playerXp[skill.ordinal()];
+					return plugin.getCachedSkillXp(skill);
 				}
 				catch (IllegalArgumentException | NullPointerException ex)
 				{
@@ -756,11 +755,10 @@ public class TaskPanel extends JPanel
 					return 0;
 				}
 			case LEVEL:
-				if (plugin.playerSkills == null) return 0;
 				try
 				{
 					Skill skill = Skill.valueOf(def.getSkill().toUpperCase());
-					return plugin.playerSkills[skill.ordinal()];
+					return plugin.getCachedSkillLevel(skill);
 				}
 				catch (IllegalArgumentException | NullPointerException ex)
 				{

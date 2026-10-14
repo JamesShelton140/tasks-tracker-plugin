@@ -519,6 +519,41 @@ public class TasksTrackerPlugin extends Plugin
 
 	}
 
+	/** Cached XP for a skill, or 0 if unknown. OVERALL is the sum of all skills. */
+	public int getCachedSkillXp(Skill skill)
+	{
+		return getCachedSkillValue(playerXp, skill);
+	}
+
+	/** Cached real level for a skill, or 0 if unknown. OVERALL is the total level. */
+	public int getCachedSkillLevel(Skill skill)
+	{
+		return getCachedSkillValue(playerSkills, skill);
+	}
+
+	private static int getCachedSkillValue(int[] values, Skill skill)
+	{
+		if (values == null)
+		{
+			return 0;
+		}
+		if (skill != Skill.OVERALL)
+		{
+			return skill.ordinal() < values.length ? values[skill.ordinal()] : 0;
+		}
+
+		// The client doesn't keep a total in the OVERALL slot, so sum the individual skills
+		long total = 0;
+		for (Skill s : Skill.values())
+		{
+			if (s != Skill.OVERALL && s.ordinal() < values.length)
+			{
+				total += values[s.ordinal()];
+			}
+		}
+		return (int) Math.min(total, Integer.MAX_VALUE);
+	}
+
 	@Subscribe
 	public void onStatChanged(StatChanged statChanged)
 	{
